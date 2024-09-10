@@ -1,0 +1,78 @@
+name: Update plugins.csv
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight UTC
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-plugins-csv:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub requests
+
+      - name: Update plugins.csv
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python - <<EOF
+          import os
+          import csv
+          from github import Github
+
+          # Initialize GitHub client
+          g = Github(os.environ['GITHUB_TOKEN'])
+
+          # Get the Open-WP-Club organization
+          org = g.get_organization('Open-WP-Club')
+
+          # Define blocklist
+          blocklist = ['plugin-hub', '.github', 'security-checker']
+
+          # Get all repositories
+          repos = org.get_repos()
+
+          # Prepare CSV data
+          csv_data = [['repo-name', 'Display Name', 'Description', 'Version', 'Repo URL']]
+
+          for repo in repos:
+              if repo.name not in blocklist:
+                  # Get the latest release version
+                  try:
+                      latest_release = repo.get_latest_release()
+                      version = latest_release.tag_name.lstrip('v')
+                  except:
+                      version = 'N/A'
+
+                  # Append repo data to CSV data
+                  csv_data.append([
+                      repo.name,
+                      repo.name.replace('-', ' ').title(),  # Display Name
+                      repo.description or 'No description available',
+                      version,
+                      repo.html_url
+                  ])
+
+          # Write CSV file
+          with open('plugins.csv', 'w', newline='') as f:
+              writer = csv.writer(f)
+              writer.writerows(csv_data)
+          EOF
+
+      - name: Commit and push if changed
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add plugins.csv
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update plugins.csv" && git push)
