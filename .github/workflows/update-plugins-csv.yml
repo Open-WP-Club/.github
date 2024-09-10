@@ -21,9 +21,6 @@ jobs:
   update-plugins-csv:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -41,7 +38,6 @@ jobs:
           python - <<EOF
           import os
           import csv
-          import base64
           from github import Github
 
           # Initialize GitHub client
@@ -85,7 +81,7 @@ jobs:
 
           # Get the current file (if it exists)
           try:
-              file = repo.get_contents('plugins.csv')
+              file = repo.get_contents('plugins.csv', ref='main')
               sha = file.sha
           except:
               sha = None
