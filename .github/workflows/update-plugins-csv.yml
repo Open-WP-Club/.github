@@ -21,6 +21,9 @@ jobs:
   update-plugins-csv:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -41,20 +44,26 @@ jobs:
           from github import Github
           from github import GithubException
 
+          def debug_print(message):
+              print(f"DEBUG: {message}")
+
           # Initialize GitHub client
           g = Github(os.environ['GITHUB_TOKEN'])
 
-          # Get the Open-WP-Club organization
-          org = g.get_organization('Open-WP-Club')
-
           # Get the current repository
           repo = g.get_repo(os.environ['GITHUB_REPOSITORY'])
+          debug_print(f"Current repository: {repo.full_name}")
+
+          # Get the Open-WP-Club organization
+          org = g.get_organization('Open-WP-Club')
+          debug_print(f"Organization: {org.login}")
 
           # Define blocklist
           blocklist = ['plugin-hub', '.github', 'security-checker']
 
           # Get all repositories
-          repos = org.get_repos()
+          repos = list(org.get_repos())
+          debug_print(f"Total repositories: {len(repos)}")
 
           # Prepare CSV data
           csv_data = [['repo-name', 'Display Name', 'Description', 'Version', 'Repo URL']]
@@ -77,21 +86,15 @@ jobs:
                       repo.html_url
                   ])
 
+          debug_print(f"CSV data prepared with {len(csv_data) - 1} entries")
+
           # Convert CSV data to string
           csv_content = '\n'.join([','.join(row) for row in csv_data])
 
-          # Try to get the current file
+          # Check if file exists
           try:
               file = repo.get_contents('plugins.csv', ref='main')
-              update_file = True
-          except GithubException as e:
-              if e.status == 404:  # File not found
-                  update_file = False
-              else:
-                  raise  # Re-raise the exception if it's not a 404
-
-          # Update or create the file
-          if update_file:
+              debug_print("plugins.csv exists, updating file")
               repo.update_file(
                   path='plugins.csv',
                   message='Update plugins.csv',
@@ -100,12 +103,19 @@ jobs:
                   branch='main'
               )
               print("plugins.csv has been updated successfully.")
-          else:
-              repo.create_file(
-                  path='plugins.csv',
-                  message='Create plugins.csv',
-                  content=csv_content,
-                  branch='main'
-              )
-              print("plugins.csv has been created successfully.")
+          except GithubException as e:
+              if e.status == 404:
+                  debug_print("plugins.csv does not exist, creating new file")
+                  repo.create_file(
+                      path='plugins.csv',
+                      message='Create plugins.csv',
+                      content=csv_content,
+                      branch='main'
+                  )
+                  print("plugins.csv has been created successfully.")
+              else:
+                  debug_print(f"Unexpected error: {e}")
+                  raise
+
+          debug_print("Script completed successfully")
           EOF
