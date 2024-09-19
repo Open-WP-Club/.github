@@ -39,6 +39,7 @@ jobs:
           import os
           import csv
           from github import Github
+          from github import GithubException
 
           # Initialize GitHub client
           g = Github(os.environ['GITHUB_TOKEN'])
@@ -79,22 +80,26 @@ jobs:
           # Convert CSV data to string
           csv_content = '\n'.join([','.join(row) for row in csv_data])
 
-          # Get the current file (if it exists)
+          # Try to get the current file
           try:
               file = repo.get_contents('plugins.csv', ref='main')
-              sha = file.sha
-          except:
-              sha = None
+              update_file = True
+          except GithubException as e:
+              if e.status == 404:  # File not found
+                  update_file = False
+              else:
+                  raise  # Re-raise the exception if it's not a 404
 
           # Update or create the file
-          if sha:
+          if update_file:
               repo.update_file(
                   path='plugins.csv',
                   message='Update plugins.csv',
                   content=csv_content,
-                  sha=sha,
+                  sha=file.sha,
                   branch='main'
               )
+              print("plugins.csv has been updated successfully.")
           else:
               repo.create_file(
                   path='plugins.csv',
@@ -102,6 +107,5 @@ jobs:
                   content=csv_content,
                   branch='main'
               )
-
-          print("plugins.csv has been updated successfully.")
+              print("plugins.csv has been created successfully.")
           EOF
