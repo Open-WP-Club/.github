@@ -32,11 +32,9 @@ jobs:
       - name: Install dependencies
         run: npm install @octokit/rest csv-stringify
 
-      - name: Update plugins.csv
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create update script
         run: |
-          node --experimental-modules - <<EOF
+          cat > update_plugins.mjs << EOL
           import { Octokit } from '@octokit/rest';
           import { stringify } from 'csv-stringify/sync';
 
@@ -114,4 +112,9 @@ jobs:
             console.error('Error:', error);
             process.exit(1);
           });
-          EOF
+          EOL
+
+      - name: Update plugins.csv
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node update_plugins.mjs
