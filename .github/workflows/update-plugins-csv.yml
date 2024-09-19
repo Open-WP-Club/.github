@@ -47,7 +47,7 @@ jobs:
             "https://api.github.com/orgs/$ORG/repos?per_page=100" | jq -r '.[] | @base64')
 
           # Prepare CSV data
-          echo "repo-name,Display Name,Description,Version,Repo URL" > plugins.csv
+          echo "repo-name,Display Name,Description,Version,Repo URL" > new_plugins.csv
 
           # Process each repository
           for repo in $REPOS; do
@@ -71,25 +71,36 @@ jobs:
               fi
 
               # Append to CSV
-              echo "$REPO_NAME,$DISPLAY_NAME,\"$DESCRIPTION\",$VERSION,$HTML_URL" >> plugins.csv
+              echo "$REPO_NAME,$DISPLAY_NAME,\"$DESCRIPTION\",$VERSION,$HTML_URL" >> new_plugins.csv
             fi
           done
 
-          echo "CSV file created."
+          echo "New CSV file created."
 
           # Check if plugins.csv exists in the repository
           FILE_SHA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv" | jq -r '.sha // empty')
 
           if [[ -n "$FILE_SHA" ]]; then
-            echo "Updating existing plugins.csv file"
-            CONTENT=$(base64 -w 0 plugins.csv)
-            curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
-              -d "{\"message\":\"Update plugins.csv\",\"content\":\"$CONTENT\",\"sha\":\"$FILE_SHA\"}" \
-              "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
+            echo "Comparing with existing plugins.csv file"
+            # Download existing plugins.csv
+            curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv" | jq -r '.content' | base64 --decode > existing_plugins.csv
+            
+            # Compare files
+            if cmp -s existing_plugins.csv new_plugins.csv; then
+              echo "No changes detected. Skipping commit."
+              exit 0
+            else
+              echo "Changes detected. Updating plugins.csv"
+              CONTENT=$(base64 -w 0 new_plugins.csv)
+              curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+                -d "{\"message\":\"Update plugins.csv\",\"content\":\"$CONTENT\",\"sha\":\"$FILE_SHA\"}" \
+                "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
+            fi
           else
             echo "Creating new plugins.csv file"
-            CONTENT=$(base64 -w 0 plugins.csv)
+            CONTENT=$(base64 -w 0 new_plugins.csv)
             curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
               -d "{\"message\":\"Create plugins.csv\",\"content\":\"$CONTENT\"}" \
               "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
