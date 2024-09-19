@@ -36,9 +36,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          node - <<EOF
-          const { Octokit } = require('@octokit/rest');
-          const { stringify } = require('csv-stringify/sync');
+          node --experimental-modules - <<EOF
+          import { Octokit } from '@octokit/rest';
+          import { stringify } from 'csv-stringify/sync';
 
           const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 
@@ -54,22 +54,22 @@ jobs:
 
             const csvData = [['repo-name', 'Display Name', 'Description', 'Version', 'Repo URL']];
 
-            for (const repo of repos) {
-              if (!blocklist.includes(repo.name)) {
+            for (const repoData of repos) {
+              if (!blocklist.includes(repoData.name)) {
                 let version = 'N/A';
                 try {
-                  const { data: release } = await octokit.repos.getLatestRelease({ owner: org, repo: repo.name });
+                  const { data: release } = await octokit.repos.getLatestRelease({ owner: org, repo: repoData.name });
                   version = release.tag_name.replace(/^v/, '');
                 } catch (error) {
-                  console.log(`No releases found for ${repo.name}`);
+                  console.log(`No releases found for ${repoData.name}`);
                 }
 
                 csvData.push([
-                  repo.name,
-                  repo.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                  repo.description || 'No description available',
+                  repoData.name,
+                  repoData.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                  repoData.description || 'No description available',
                   version,
-                  repo.html_url
+                  repoData.html_url
                 ]);
               }
             }
