@@ -7,15 +7,6 @@ on:
 
 permissions:
   contents: write
-  actions: read
-  checks: read
-  deployments: read
-  issues: read
-  packages: read
-  pull-requests: read
-  repository-projects: read
-  security-events: read
-  statuses: read
 
 jobs:
   update-plugins-csv:
@@ -24,97 +15,84 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm install @octokit/rest csv-stringify
-
-      - name: Create update script
-        run: |
-          cat > update_plugins.mjs << EOL
-          import { Octokit } from '@octokit/rest';
-          import { stringify } from 'csv-stringify/sync';
-
-          const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-
-          async function updatePluginsCsv() {
-            const org = 'Open-WP-Club';
-            const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
-            const blocklist = ['plugin-hub', '.github', 'security-checker'];
-
-            console.log('Fetching repositories...');
-            const { data: repos } = await octokit.repos.listForOrg({ org, per_page: 100 });
-
-            console.log(`Found ${repos.length} repositories`);
-
-            const csvData = [['repo-name', 'Display Name', 'Description', 'Version', 'Repo URL']];
-
-            for (const repoData of repos) {
-              if (!blocklist.includes(repoData.name)) {
-                let version = 'N/A';
-                try {
-                  const { data: release } = await octokit.repos.getLatestRelease({ owner: org, repo: repoData.name });
-                  version = release.tag_name.replace(/^v/, '');
-                } catch (error) {
-                  console.log(`No releases found for ${repoData.name}`);
-                }
-
-                csvData.push([
-                  repoData.name,
-                  repoData.name.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                  repoData.description || 'No description available',
-                  version,
-                  repoData.html_url
-                ]);
-              }
-            }
-
-            const csvContent = stringify(csvData);
-
-            try {
-              const { data: existingFile } = await octokit.repos.getContent({
-                owner,
-                repo,
-                path: 'plugins.csv',
-              });
-
-              console.log('Updating existing plugins.csv file');
-              await octokit.repos.createOrUpdateFileContents({
-                owner,
-                repo,
-                path: 'plugins.csv',
-                message: 'Update plugins.csv',
-                content: Buffer.from(csvContent).toString('base64'),
-                sha: existingFile.sha,
-              });
-            } catch (error) {
-              if (error.status === 404) {
-                console.log('Creating new plugins.csv file');
-                await octokit.repos.createOrUpdateFileContents({
-                  owner,
-                  repo,
-                  path: 'plugins.csv',
-                  message: 'Create plugins.csv',
-                  content: Buffer.from(csvContent).toString('base64'),
-                });
-              } else {
-                throw error;
-              }
-            }
-
-            console.log('plugins.csv has been updated successfully');
-          }
-
-          updatePluginsCsv().catch(error => {
-            console.error('Error:', error);
-            process.exit(1);
-          });
-          EOL
+      - name: Install jq
+        run: sudo apt-get install jq
 
       - name: Update plugins.csv
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: node update_plugins.mjs
+        run: |
+          #!/bin/bash
+          set -e
+
+          ORG="Open-WP-Club"
+          REPO="${GITHUB_REPOSITORY#*/}"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          BLOCKLIST=("plugin-hub" ".github" "security-checker")
+
+          # Function to check if an item is in the blocklist
+          in_blocklist() {
+            local item="$1"
+            for i in "${BLOCKLIST[@]}"; do
+              if [[ "$i" == "$item" ]]; then
+                return 0
+              fi
+            done
+            return 1
+          }
+
+          # Fetch repositories
+          echo "Fetching repositories..."
+          REPOS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/orgs/$ORG/repos?per_page=100" | jq -r '.[] | @base64')
+
+          # Prepare CSV data
+          echo "repo-name,Display Name,Description,Version,Repo URL" > plugins.csv
+
+          # Process each repository
+          for repo in $REPOS; do
+            # Decode repository data
+            REPO_DATA=$(echo "$repo" | base64 --decode)
+            REPO_NAME=$(echo "$REPO_DATA" | jq -r '.name')
+            
+            if ! in_blocklist "$REPO_NAME"; then
+              DESCRIPTION=$(echo "$REPO_DATA" | jq -r '.description // "No description available"')
+              HTML_URL=$(echo "$REPO_DATA" | jq -r '.html_url')
+              DISPLAY_NAME=$(echo "$REPO_NAME" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++){ $i=toupper(substr($i,1,1)) substr($i,2) }}1')
+              
+              # Get latest release version
+              RELEASE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+                "https://api.github.com/repos/$ORG/$REPO_NAME/releases/latest")
+              
+              if [[ $(echo "$RELEASE" | jq -r '.message // empty') == "Not Found" ]]; then
+                VERSION="N/A"
+              else
+                VERSION=$(echo "$RELEASE" | jq -r '.tag_name' | sed 's/^v//')
+              fi
+
+              # Append to CSV
+              echo "$REPO_NAME,$DISPLAY_NAME,\"$DESCRIPTION\",$VERSION,$HTML_URL" >> plugins.csv
+            fi
+          done
+
+          echo "CSV file created."
+
+          # Check if plugins.csv exists in the repository
+          FILE_SHA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv" | jq -r '.sha // empty')
+
+          if [[ -n "$FILE_SHA" ]]; then
+            echo "Updating existing plugins.csv file"
+            CONTENT=$(base64 -w 0 plugins.csv)
+            curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+              -d "{\"message\":\"Update plugins.csv\",\"content\":\"$CONTENT\",\"sha\":\"$FILE_SHA\"}" \
+              "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
+          else
+            echo "Creating new plugins.csv file"
+            CONTENT=$(base64 -w 0 plugins.csv)
+            curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+              -d "{\"message\":\"Create plugins.csv\",\"content\":\"$CONTENT\"}" \
+              "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
+          fi
+
+          echo "plugins.csv has been updated successfully"
