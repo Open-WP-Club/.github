@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.x'
 
@@ -87,13 +87,21 @@ jobs:
               sha = None
 
           # Update or create the file
-          repo.update_file(
-              path='plugins.csv',
-              message='Update plugins.csv',
-              content=csv_content,
-              sha=sha,
-              branch='main'
-          )
+          if sha:
+              repo.update_file(
+                  path='plugins.csv',
+                  message='Update plugins.csv',
+                  content=csv_content,
+                  sha=sha,
+                  branch='main'
+              )
+          else:
+              repo.create_file(
+                  path='plugins.csv',
+                  message='Create plugins.csv',
+                  content=csv_content,
+                  branch='main'
+              )
 
           print("plugins.csv has been updated successfully.")
           EOF
