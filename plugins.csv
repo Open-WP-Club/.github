@@ -1,5 +1,5 @@
 repo-name,Display Name,Description,Version,Repo URL
-wp-disabling-comments,Wp Disabling Comments,"The plugin allows you to completely remove comment-related features from your WordPress site's front-end and admin areas.",N/A,https://github.com/Open-WP-Club/wp-disabling-comments
+wp-disabling-comments,Wp Disabling Comments,"The plugin allows you to completely remove comment-related features from your WordPress site's front-end and admin areas.",1.0.0,https://github.com/Open-WP-Club/wp-disabling-comments
 wp-feature-remover,Wp Feature Remover,"Removing parts of the WordPress funcionallity you don't use",N/A,https://github.com/Open-WP-Club/wp-feature-remover
 wp-internal-linking,Wp Internal Linking,"WordPress plugin to manage and analyze internal linking in your WordPress website.",1.0.0,https://github.com/Open-WP-Club/wp-internal-linking
 ideaverse,Ideaverse,"No description available",N/A,https://github.com/Open-WP-Club/ideaverse
