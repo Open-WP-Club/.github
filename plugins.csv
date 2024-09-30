@@ -1,9 +1,15 @@
 repo-name,Display Name,Description,Version,Repo URL
+Bulk-Order-Editor,Bulk Order Editor,"Bulk Order Editor for WooCommerce allows store managers to quickly modify multiple orders at once, directly from the WordPress admin panel.",N/A,https://github.com/Open-WP-Club/Bulk-Order-Editor
+Last-User-Orders-by-Roles,Last User Orders By Roles,"This tool is especially useful for store managers who need to keep track of customer engagement and adjust user roles automatically based on purchasing activity.",N/A,https://github.com/Open-WP-Club/Last-User-Orders-by-Roles
+StageGuard,StageGuard,"A WordPress plugin designed to clearly indicate that a website is running in a staging environment with a few extensions",N/A,https://github.com/Open-WP-Club/StageGuard
+WC-Pre-order,WC Pre Order,"WooCommerce Pre-Order Plugin - It checks for a specific promo code on certain products and limits if not applied.",N/A,https://github.com/Open-WP-Club/WC-Pre-order
+wp-rank-math-automation,Wp Rank Math Automation,"Optimize WooCommerce products for SEO using RankMath",N/A,https://github.com/Open-WP-Club/wp-rank-math-automation
+WP-Clean,WP Clean,"No description available",N/A,https://github.com/Open-WP-Club/WP-Clean
 wp-disabling-comments,Wp Disabling Comments,"The plugin allows you to completely remove comment-related features from your WordPress site's front-end and admin areas.",1.0.0,https://github.com/Open-WP-Club/wp-disabling-comments
 wp-feature-remover,Wp Feature Remover,"Removing parts of the WordPress funcionallity you don't use",N/A,https://github.com/Open-WP-Club/wp-feature-remover
 wp-internal-linking,Wp Internal Linking,"WordPress plugin to manage and analyze internal linking in your WordPress website.",1.0.0,https://github.com/Open-WP-Club/wp-internal-linking
 ideaverse,Ideaverse,"No description available",N/A,https://github.com/Open-WP-Club/ideaverse
-resume-builder,Resume Builder,"Display your resume on a WordPress page or post - simple way to manage all the needed information",N/A,https://github.com/Open-WP-Club/resume-builder
+resume-builder,Resume Builder,"Display your resume on a WordPress page or post - simple way to manage all the needed information",1.0.0,https://github.com/Open-WP-Club/resume-builder
 plugin-hub,Plugin Hub,"Plugin Hub is Open WP Club official way of installing/updating plugins from their official repos.",N/A,https://github.com/Open-WP-Club/plugin-hub
-wp-sanitize,Wp Sanitize,"WordPress developers and site administrators who need to work with real data without compromising sensitive information",N/A,https://github.com/Open-WP-Club/wp-sanitize
-wp-email-settings,Wp Email Settings,"Plugin designed to give administrators full control over the site's email functionality. It allows you to manage, log, and analyze email activities",N/A,https://github.com/Open-WP-Club/wp-email-settings
+wp-sanitize,Wp Sanitize,"WordPress developers and site administrators who need to work with real data without compromising sensitive information",1.0.0,https://github.com/Open-WP-Club/wp-sanitize
+wp-email-settings,Wp Email Settings,"Plugin designed to give administrators full control over the site's email functionality. It allows you to manage, log, and analyze email activities",1.0.0,https://github.com/Open-WP-Club/wp-email-settings
