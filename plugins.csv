@@ -1,7 +1,7 @@
 repo-name,Display Name,Description,Version,Repo URL
 Bulk-Order-Editor,Bulk Order Editor,"Bulk Order Editor for WooCommerce allows store managers to quickly modify multiple orders at once, directly from the WordPress admin panel.",N/A,https://github.com/Open-WP-Club/Bulk-Order-Editor
 Last-User-Orders-by-Roles,Last User Orders By Roles,"This tool is especially useful for store managers who need to keep track of customer engagement and adjust user roles automatically based on purchasing activity.",N/A,https://github.com/Open-WP-Club/Last-User-Orders-by-Roles
-StageGuard,StageGuard,"A WordPress plugin designed to clearly indicate that a website is running in a staging environment with a few extensions",N/A,https://github.com/Open-WP-Club/StageGuard
+StageGuard,StageGuard,"A WordPress plugin designed to clearly indicate that a website is running in a staging environment with a few extensions",1.0.0,https://github.com/Open-WP-Club/StageGuard
 WC-Pre-order,WC Pre Order,"WooCommerce Pre-Order Plugin - It checks for a specific promo code on certain products and limits if not applied.",N/A,https://github.com/Open-WP-Club/WC-Pre-order
 better-user-search,Better User Search,"No description available",N/A,https://github.com/Open-WP-Club/better-user-search
 wp-rank-math-automation,Wp Rank Math Automation,"Optimize WooCommerce products for SEO using RankMath",N/A,https://github.com/Open-WP-Club/wp-rank-math-automation
@@ -20,3 +20,5 @@ Speculation-Rules-for-WP,Speculation Rules For WP,"No description available",1.1
 WP-User-Blocking,WP User Blocking,"No description available",1.1.0,https://github.com/Open-WP-Club/WP-User-Blocking
 WP-Hide-Admin,WP Hide Admin,"No description available",N/A,https://github.com/Open-WP-Club/WP-Hide-Admin
 Woo-phone-order,Woo Phone Order,"No description available",N/A,https://github.com/Open-WP-Club/Woo-phone-order
+WP-Historical-Preservation-Mode,WP Historical Preservation Mode,"No description available",N/A,https://github.com/Open-WP-Club/WP-Historical-Preservation-Mode
+wp-Team-Members-Manager,Wp Team Members Manager,"No description available",N/A,https://github.com/Open-WP-Club/wp-Team-Members-Manager
