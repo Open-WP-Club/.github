@@ -3,13 +3,12 @@ Bulk-Order-Editor,Bulk Order Editor,"Bulk Order Editor for WooCommerce allows st
 Last-User-Orders-by-Roles,Last User Orders By Roles,"This tool is especially useful for store managers who need to keep track of customer engagement and adjust user roles automatically based on purchasing activity.",N/A,https://github.com/Open-WP-Club/Last-User-Orders-by-Roles
 StageGuard,StageGuard,"A WordPress plugin designed to clearly indicate that a website is running in a staging environment with a few extensions",1.0.0,https://github.com/Open-WP-Club/StageGuard
 WC-Pre-order,WC Pre Order,"WooCommerce Pre-Order Plugin - It checks for a specific promo code on certain products and limits if not applied.",N/A,https://github.com/Open-WP-Club/WC-Pre-order
-better-user-search,Better User Search,"No description available",N/A,https://github.com/Open-WP-Club/better-user-search
+better-user-search,Better User Search,"Improves the search for users in the admin significantly: Search for first name, last, email and much more of users instead of only nicename.",1.0.0,https://github.com/Open-WP-Club/better-user-search
 wp-rank-math-automation,Wp Rank Math Automation,"Optimize WooCommerce products for SEO using RankMath",N/A,https://github.com/Open-WP-Club/wp-rank-math-automation
 WP-Clean,WP Clean,"No description available",N/A,https://github.com/Open-WP-Club/WP-Clean
 wp-disabling-comments,Wp Disabling Comments,"The plugin allows you to completely remove comment-related features from your WordPress site's front-end and admin areas.",1.0.0,https://github.com/Open-WP-Club/wp-disabling-comments
 wp-feature-remover,Wp Feature Remover,"Removing parts of the WordPress funcionallity you don't use",N/A,https://github.com/Open-WP-Club/wp-feature-remover
 wp-internal-linking,Wp Internal Linking,"WordPress plugin to manage and analyze internal linking in your WordPress website.",1.0.0,https://github.com/Open-WP-Club/wp-internal-linking
-ideaverse,Ideaverse,"No description available",N/A,https://github.com/Open-WP-Club/ideaverse
 resume-builder,Resume Builder,"Display your resume on a WordPress page or post - simple way to manage all the needed information",1.0.0,https://github.com/Open-WP-Club/resume-builder
 plugin-hub,Plugin Hub,"Plugin Hub is Open WP Club official way of installing/updating plugins from their official repos.",1.0.1,https://github.com/Open-WP-Club/plugin-hub
 wp-sanitize,Wp Sanitize,"WordPress developers and site administrators who need to work with real data without compromising sensitive information",1.1.1,https://github.com/Open-WP-Club/wp-sanitize
@@ -17,14 +16,13 @@ wp-email-settings,Wp Email Settings,"Plugin designed to give administrators full
 WooCommerce-Phone-Number-Validator,WooCommerce Phone Number Validator,"WooCommerce Phone Number Validator is a WordPress plugin that enhances the WooCommerce checkout process by validating phone numbers based on country-specific patterns. It allows store owners to ensure that customers enter valid phone numbers for their respective countries.",1.1.1,https://github.com/Open-WP-Club/WooCommerce-Phone-Number-Validator
 WP-eu-vat,WP Eu Vat,"No description available",N/A,https://github.com/Open-WP-Club/WP-eu-vat
 Speculation-Rules-for-WP,Speculation Rules For WP,"WordPress plugin that adds support for the Speculation Rules API. This API allows for dynamic prefetching or prerendering of URLs based on user interaction, potentially improving the perceived loading speed of your website.",1.1.0,https://github.com/Open-WP-Club/Speculation-Rules-for-WP
-WP-User-Blocking,WP User Blocking,"No description available",1.1.0,https://github.com/Open-WP-Club/WP-User-Blocking
-WP-Hide-Admin,WP Hide Admin,"No description available",N/A,https://github.com/Open-WP-Club/WP-Hide-Admin
+WP-User-Blocking,WP User Blocking,"WordPress plugin that allows administrators to restrict access to their website for specific users based on email addresses or IP addresses. It provides a customizable block message and offers features such as email export/import functionality and debug mode.",1.1.0,https://github.com/Open-WP-Club/WP-User-Blocking
 Woo-phone-order,Woo Phone Order,"No description available",N/A,https://github.com/Open-WP-Club/Woo-phone-order
-WP-Historical-Preservation-Mode,WP Historical Preservation Mode,"No description available",N/A,https://github.com/Open-WP-Club/WP-Historical-Preservation-Mode
+WP-Historical-Preservation-Mode,WP Historical Preservation Mode,"A lightweight WordPress plugin that helps preserve websites by disabling content modification capabilities while maintaining full read access to all areas of the WordPress admin.",1.0.0,https://github.com/Open-WP-Club/WP-Historical-Preservation-Mode
 wp-Team-Members-Manager,Wp Team Members Manager,"WordPress plugin to manage and display your team members on your website. This plugin allows you to create and manage team members, organize them by departments, and display them in a responsive grid layout.",1.0.0,https://github.com/Open-WP-Club/wp-Team-Members-Manager
-WP-File-Visibility-Manager,WP File Visibility Manager,"No description available",N/A,https://github.com/Open-WP-Club/WP-File-Visibility-Manager
-admin-notice-remover,Admin Notice Remover,"No description available",N/A,https://github.com/Open-WP-Club/admin-notice-remover
-wp-google-scholar,Wp Google Scholar,"No description available",1.2.0,https://github.com/Open-WP-Club/wp-google-scholar
-wp-logo-link,Wp Logo Link,"No description available",1.0.0,https://github.com/Open-WP-Club/wp-logo-link
-wp-simple-order-history,Wp Simple Order History,"No description available",1.0.0,https://github.com/Open-WP-Club/wp-simple-order-history
-woocommerce-sku-auto,Woocommerce Sku Auto,"No description available",1.0.0,https://github.com/Open-WP-Club/woocommerce-sku-auto
+WP-File-Visibility-Manager,WP File Visibility Manager,"WordPress plugin that provides granular control over file access and visibility on your WordPress site. It allows administrators to protect specific file types and manage access through an intuitive admin interface.",1.0.0,https://github.com/Open-WP-Club/WP-File-Visibility-Manager
+admin-notice-remover,Admin Notice Remover,"Admin Notice Remover allows you to permanently remove specific admin notices that you don't want to see in your WordPress dashboard. ",N/A,https://github.com/Open-WP-Club/admin-notice-remover
+wp-google-scholar,Wp Google Scholar,"A WordPress plugin that allows you to display your Google Scholar profile information on your website using a simple shortcode.",1.2.0,https://github.com/Open-WP-Club/wp-google-scholar
+wp-logo-link,Wp Logo Link,"WordPress plugin that enhances your site logo's functionality by adding customizable click behaviors. Left-click directs to your homepage, while right-click leads to your specified assets page.",1.0.0,https://github.com/Open-WP-Club/wp-logo-link
+wp-simple-order-history,Wp Simple Order History,"A lightweight WordPress plugin that adds a purchase history tab to WooCommerce My Account page, allowing customers to view their order history and manage product reviews.",1.0.0,https://github.com/Open-WP-Club/wp-simple-order-history
+woocommerce-sku-auto,Woocommerce Sku Auto,"A WordPress plugin that automatically generates SKUs for WooCommerce products that don't have them. Features bulk generation and customizable SKU patterns.",1.0.0,https://github.com/Open-WP-Club/woocommerce-sku-auto
