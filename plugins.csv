@@ -1,8 +1,8 @@
 repo-name,Display Name,Description,Version,Repo URL
-Bulk-Order-Editor,Bulk Order Editor,"Bulk Order Editor for WooCommerce allows store managers to quickly modify multiple orders at once, directly from the WordPress admin panel.",N/A,https://github.com/Open-WP-Club/Bulk-Order-Editor
-Last-User-Orders-by-Roles,Last User Orders By Roles,"This tool is especially useful for store managers who need to keep track of customer engagement and adjust user roles automatically based on purchasing activity.",N/A,https://github.com/Open-WP-Club/Last-User-Orders-by-Roles
+Bulk-Order-Editor,Bulk Order Editor,"Bulk Order Editor for WooCommerce allows store managers to quickly modify multiple orders at once, directly from the WordPress admin panel.",1.0.0,https://github.com/Open-WP-Club/Bulk-Order-Editor
+Last-User-Orders-by-Roles,Last User Orders By Roles,"This tool is especially useful for store managers who need to keep track of customer engagement and adjust user roles automatically based on purchasing activity.",1.0.0,https://github.com/Open-WP-Club/Last-User-Orders-by-Roles
 StageGuard,StageGuard,"A WordPress plugin designed to clearly indicate that a website is running in a staging environment with a few extensions",1.0.0,https://github.com/Open-WP-Club/StageGuard
-WC-Pre-order,WC Pre Order,"WooCommerce Pre-Order Plugin - It checks for a specific promo code on certain products and limits if not applied.",N/A,https://github.com/Open-WP-Club/WC-Pre-order
+WC-Pre-order,WC Pre Order,"WooCommerce Pre-Order Plugin - It checks for a specific promo code on certain products and limits if not applied.",1.0.0,https://github.com/Open-WP-Club/WC-Pre-order
 better-user-search,Better User Search,"Improves the search for users in the admin significantly: Search for first name, last, email and much more of users instead of only nicename.",1.0.0,https://github.com/Open-WP-Club/better-user-search
 wp-rank-math-automation,Wp Rank Math Automation,"Optimize WooCommerce products for SEO using RankMath",N/A,https://github.com/Open-WP-Club/wp-rank-math-automation
 WP-Clean,WP Clean,"No description available",N/A,https://github.com/Open-WP-Club/WP-Clean
@@ -26,3 +26,4 @@ wp-google-scholar,Wp Google Scholar,"A WordPress plugin that allows you to displ
 wp-logo-link,Wp Logo Link,"WordPress plugin that enhances your site logo's functionality by adding customizable click behaviors. Left-click directs to your homepage, while right-click leads to your specified assets page.",1.0.0,https://github.com/Open-WP-Club/wp-logo-link
 wp-simple-order-history,Wp Simple Order History,"A lightweight WordPress plugin that adds a purchase history tab to WooCommerce My Account page, allowing customers to view their order history and manage product reviews.",1.0.0,https://github.com/Open-WP-Club/wp-simple-order-history
 woocommerce-sku-auto,Woocommerce Sku Auto,"A WordPress plugin that automatically generates SKUs for WooCommerce products that don't have them. Features bulk generation and customizable SKU patterns.",1.0.0,https://github.com/Open-WP-Club/woocommerce-sku-auto
+www,Www,"No description available",N/A,https://github.com/Open-WP-Club/www
