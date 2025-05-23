@@ -2,7 +2,7 @@ name: Update plugins.csv
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Run daily at midnight UTC
+    - cron: '0 0 * * 0'  # Run weekly on Sunday at midnight UTC
   workflow_dispatch:  # Allow manual triggering
 
 permissions:
@@ -41,10 +41,11 @@ jobs:
             return 1
           }
 
-          # Fetch repositories
+          # Fetch repositories (excluding archived ones)
           echo "Fetching repositories..."
           REPOS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/orgs/$ORG/repos?per_page=100" | jq -r '.[] | @base64')
+            "https://api.github.com/orgs/$ORG/repos?per_page=100" | \
+            jq -r '.[] | select(.archived == false) | @base64')
 
           # Prepare CSV data
           echo "repo-name,Display Name,Description,Version,Repo URL" > plugins.csv
