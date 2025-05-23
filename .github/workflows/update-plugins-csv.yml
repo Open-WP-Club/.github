@@ -28,7 +28,7 @@ jobs:
           ORG="Open-WP-Club"
           REPO="${GITHUB_REPOSITORY#*/}"
           OWNER="${GITHUB_REPOSITORY%%/*}"
-          BLOCKLIST=(".github" "security-checker")
+          BLOCKLIST=(".github" "security-checker" "www")
 
           # Function to check if an item is in the blocklist
           in_blocklist() {
