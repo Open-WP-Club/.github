@@ -27,3 +27,6 @@ wp-simple-order-history,Wp Simple Order History,"A lightweight WordPress plugin 
 woocommerce-sku-auto,Woocommerce Sku Auto,"A WordPress plugin that automatically generates SKUs for WooCommerce products that don't have them. Features bulk generation and customizable SKU patterns.",1.0.0,https://github.com/Open-WP-Club/woocommerce-sku-auto
 User-Self-Delete,User Self Delete,"No description available",N/A,https://github.com/Open-WP-Club/User-Self-Delete
 Gravity-Forms-Shopify-Integration,Gravity Forms Shopify Integration,"A WordPress plugin that automatically sends Gravity Forms submissions to your Shopify customer database with marketing subscription opt-in.",1.0.1,https://github.com/Open-WP-Club/Gravity-Forms-Shopify-Integration
+WooCommerce-Order-Payment-Limiter,WooCommerce Order Payment Limiter,"No description available",N/A,https://github.com/Open-WP-Club/WooCommerce-Order-Payment-Limiter
+wpfleet,Wpfleet,"WPFleet is a production-ready, scalable solution for hosting multiple WordPress sites on a single server using Docker, FrankenPHP, MariaDB, and Redis.",N/A,https://github.com/Open-WP-Club/wpfleet
+OpenGraph-SVG-Generator,OpenGraph SVG Generator,"A WordPress plugin that automatically generates beautiful SVG OpenGraph images for social media sharing.",N/A,https://github.com/Open-WP-Club/OpenGraph-SVG-Generator
