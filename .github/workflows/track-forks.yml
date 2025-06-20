@@ -1,0 +1,319 @@
+name: Track Weekly Downloads
+
+on:
+  schedule:
+    # Run every Sunday at 2 AM UTC to capture the previous week
+    - cron: '0 2 * * 0'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  track-downloads:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: |
+        npm init -y
+        npm install @octokit/rest csv-writer csv-parser
+        
+    - name: Create download tracking script
+      run: |
+        cat > track-downloads.js << 'EOF'
+        const { Octokit } = require('@octokit/rest');
+        const createCsvWriter = require('csv-writer').createObjectCsvWriter;
+        const csv = require('csv-parser');
+        const fs = require('fs');
+
+        const octokit = new Octokit({
+          auth: process.env.GITHUB_TOKEN,
+        });
+
+        const CSV_FILE = 'downloads.csv';
+        const ORG_NAME = process.env.GITHUB_REPOSITORY.split('/')[0];
+
+        // Get the current week's date range (Sunday to Saturday)
+        function getCurrentWeekRange() {
+          const now = new Date();
+          const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          
+          // Calculate the start of the current week (Sunday)
+          const weekStart = new Date(now);
+          weekStart.setDate(now.getDate() - currentDay);
+          weekStart.setHours(0, 0, 0, 0);
+          
+          // Calculate the end of the current week (Saturday)
+          const weekEnd = new Date(weekStart);
+          weekEnd.setDate(weekStart.getDate() + 6);
+          weekEnd.setHours(23, 59, 59, 999);
+          
+          return {
+            start: weekStart,
+            end: weekEnd,
+            weekId: `${weekStart.getFullYear()}-W${Math.ceil(weekStart.getDate() / 7)}`
+          };
+        }
+
+        async function getAllRepos() {
+          const repos = [];
+          let page = 1;
+          let hasNext = true;
+
+          while (hasNext) {
+            try {
+              const response = await octokit.rest.repos.listForOrg({
+                org: ORG_NAME,
+                type: 'all',
+                per_page: 100,
+                page: page,
+              });
+
+              repos.push(...response.data);
+              
+              hasNext = response.data.length === 100;
+              page++;
+              
+              console.log(`Fetched page ${page - 1}, got ${response.data.length} repos`);
+            } catch (error) {
+              console.error(`Error fetching repos page ${page}:`, error.message);
+              break;
+            }
+          }
+
+          return repos;
+        }
+
+        async function getRepoDownloads(repo) {
+          try {
+            const releases = await octokit.rest.repos.listReleases({
+              owner: repo.owner.login,
+              repo: repo.name,
+              per_page: 100
+            });
+
+            let totalDownloads = 0;
+            const assetDetails = [];
+
+            for (const release of releases.data) {
+              for (const asset of release.assets) {
+                totalDownloads += asset.download_count;
+                assetDetails.push({
+                  release_name: release.name || release.tag_name,
+                  release_tag: release.tag_name,
+                  asset_name: asset.name,
+                  download_count: asset.download_count,
+                  asset_size: asset.size,
+                  created_at: asset.created_at,
+                  updated_at: asset.updated_at
+                });
+              }
+            }
+
+            return { totalDownloads, assetDetails, releaseCount: releases.data.length };
+          } catch (error) {
+            console.error(`Error fetching downloads for ${repo.name}:`, error.message);
+            return { totalDownloads: 0, assetDetails: [], releaseCount: 0 };
+          }
+        }
+
+        async function weekAlreadyExists(weekId) {
+          if (!fs.existsSync(CSV_FILE)) {
+            return false;
+          }
+          
+          return new Promise((resolve, reject) => {
+            let found = false;
+            fs.createReadStream(CSV_FILE)
+              .pipe(csv())
+              .on('data', (row) => {
+                if (row.week_id === weekId) {
+                  found = true;
+                }
+              })
+              .on('end', () => {
+                resolve(found);
+              })
+              .on('error', reject);
+          });
+        }
+
+        async function main() {
+          try {
+            const weekRange = getCurrentWeekRange();
+            console.log(`Tracking downloads for week: ${weekRange.weekId}`);
+            console.log(`Week range: ${weekRange.start.toISOString()} to ${weekRange.end.toISOString()}`);
+            
+            // Check if this week's data already exists
+            const weekExists = await weekAlreadyExists(weekRange.weekId);
+            if (weekExists) {
+              console.log(`Data for week ${weekRange.weekId} already exists. Skipping...`);
+              console.log(`::set-output name=skipped::true`);
+              return;
+            }
+            
+            console.log(`Tracking downloads for organization: ${ORG_NAME}`);
+            
+            // Get all repositories in the organization
+            const allRepos = await getAllRepos();
+            console.log(`Total repositories found: ${allRepos.length}`);
+            
+            // Track downloads for each repo
+            const downloadData = [];
+            let totalOrgDownloads = 0;
+            let reposWithReleases = 0;
+            
+            for (const repo of allRepos) {
+              console.log(`Processing ${repo.name}...`);
+              const { totalDownloads, assetDetails, releaseCount } = await getRepoDownloads(repo);
+              
+              if (totalDownloads > 0) {
+                reposWithReleases++;
+                totalOrgDownloads += totalDownloads;
+                
+                // Add summary row for the repo
+                downloadData.push({
+                  week_id: weekRange.weekId,
+                  week_start: weekRange.start.toISOString(),
+                  week_end: weekRange.end.toISOString(),
+                  recorded_date: new Date().toISOString(),
+                  repo_name: repo.name,
+                  repo_full_name: repo.full_name,
+                  entry_type: 'REPO_SUMMARY',
+                  release_name: '',
+                  release_tag: '',
+                  asset_name: '',
+                  download_count: totalDownloads,
+                  asset_size: '',
+                  release_count: releaseCount,
+                  repo_stars: repo.stargazers_count,
+                  repo_forks: repo.forks_count,
+                  repo_language: repo.language || 'None',
+                  repo_private: repo.private
+                });
+                
+                // Add detailed rows for each asset
+                for (const asset of assetDetails) {
+                  downloadData.push({
+                    week_id: weekRange.weekId,
+                    week_start: weekRange.start.toISOString(),
+                    week_end: weekRange.end.toISOString(),
+                    recorded_date: new Date().toISOString(),
+                    repo_name: repo.name,
+                    repo_full_name: repo.full_name,
+                    entry_type: 'ASSET_DETAIL',
+                    release_name: asset.release_name,
+                    release_tag: asset.release_tag,
+                    asset_name: asset.asset_name,
+                    download_count: asset.download_count,
+                    asset_size: asset.asset_size,
+                    release_count: '',
+                    repo_stars: '',
+                    repo_forks: '',
+                    repo_language: '',
+                    repo_private: ''
+                  });
+                }
+              }
+              
+              // Small delay to respect rate limits
+              await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            console.log(`Repositories with releases: ${reposWithReleases}`);
+            console.log(`Total organization downloads: ${totalOrgDownloads}`);
+            console.log(`Total records to add: ${downloadData.length}`);
+            
+            if (downloadData.length > 0) {
+              // Setup CSV writer
+              const csvWriter = createCsvWriter({
+                path: CSV_FILE,
+                header: [
+                  { id: 'week_id', title: 'Week ID' },
+                  { id: 'week_start', title: 'Week Start' },
+                  { id: 'week_end', title: 'Week End' },
+                  { id: 'recorded_date', title: 'Recorded Date' },
+                  { id: 'repo_name', title: 'Repository Name' },
+                  { id: 'repo_full_name', title: 'Repository Full Name' },
+                  { id: 'entry_type', title: 'Entry Type' },
+                  { id: 'release_name', title: 'Release Name' },
+                  { id: 'release_tag', title: 'Release Tag' },
+                  { id: 'asset_name', title: 'Asset Name' },
+                  { id: 'download_count', title: 'Download Count' },
+                  { id: 'asset_size', title: 'Asset Size (bytes)' },
+                  { id: 'release_count', title: 'Total Releases' },
+                  { id: 'repo_stars', title: 'Repository Stars' },
+                  { id: 'repo_forks', title: 'Repository Forks' },
+                  { id: 'repo_language', title: 'Primary Language' },
+                  { id: 'repo_private', title: 'Is Private' }
+                ],
+                append: fs.existsSync(CSV_FILE)
+              });
+              
+              // Write download data to CSV
+              await csvWriter.writeRecords(downloadData);
+              console.log(`Successfully added download data for week ${weekRange.weekId} to ${CSV_FILE}`);
+              
+              // Set outputs for commit message
+              console.log(`::set-output name=week_id::${weekRange.weekId}`);
+              console.log(`::set-output name=total_downloads::${totalOrgDownloads}`);
+              console.log(`::set-output name=repos_with_releases::${reposWithReleases}`);
+              console.log(`::set-output name=skipped::false`);
+            } else {
+              console.log('No download data found');
+              console.log(`::set-output name=week_id::${weekRange.weekId}`);
+              console.log(`::set-output name=total_downloads::0`);
+              console.log(`::set-output name=repos_with_releases::0`);
+              console.log(`::set-output name=skipped::false`);
+            }
+            
+          } catch (error) {
+            console.error('Error:', error);
+            process.exit(1);
+          }
+        }
+
+        main();
+        EOF
+        
+    - name: Run download tracking
+      id: track
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: node track-downloads.js
+      
+    - name: Commit and push changes
+      if: steps.track.outputs.skipped != 'true'
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        if [[ -n $(git status --porcelain) ]]; then
+          git add downloads.csv
+          git commit -m "📈 Weekly downloads tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_downloads }} total downloads across ${{ steps.track.outputs.repos_with_releases }} repos"
+          git push
+          echo "Changes committed and pushed"
+        else
+          echo "No changes to commit"
+        fi
+        
+    - name: Skip notification
+      if: steps.track.outputs.skipped == 'true'
+      run: echo "Skipped - data for this week already exists"
+        
+    - name: Upload CSV as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: weekly-downloads-csv
+        path: downloads.csv
+        retention-days: 90
