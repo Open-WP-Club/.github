@@ -23,8 +23,20 @@ jobs:
         
     - name: Install dependencies
       run: |
-        npm init -y
-        npm install @octokit/rest csv-writer csv-parser
+        cat > package.json << 'EOF'
+        {
+          "name": "github-downloads-tracker",
+          "version": "1.0.0",
+          "description": "Track GitHub organization downloads",
+          "main": "track-downloads.js",
+          "dependencies": {
+            "@octokit/rest": "^20.0.0",
+            "csv-writer": "^1.6.0",
+            "csv-parser": "^3.0.0"
+          }
+        }
+        EOF
+        npm install
         
     - name: Create download tracking script
       run: |
