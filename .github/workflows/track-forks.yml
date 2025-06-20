@@ -1,4 +1,4 @@
-name: Track Weekly Traffic (Clones & Views)
+name: Track Weekly Repository Growth & Traffic
 
 on:
   schedule:
@@ -7,7 +7,7 @@ on:
   workflow_dispatch: # Allow manual triggering
 
 jobs:
-  track-traffic:
+  track-growth:
     runs-on: ubuntu-latest
     
     steps:
@@ -41,6 +41,24 @@ jobs:
     - name: Create traffic tracking script
       run: |
         cat > track-downloads.js << 'EOF'
+        /*
+         * GitHub Repository Tracker
+         * 
+         * This script tracks repository growth metrics and attempts to get traffic data.
+         * 
+         * TRAFFIC DATA PERMISSION NOTE:
+         * The default GITHUB_TOKEN doesn't have permission to access traffic data.
+         * To enable traffic tracking, you need to:
+         * 
+         * 1. Create a Personal Access Token with 'repo' scope
+         * 2. Add it as a repository secret named 'TRAFFIC_TOKEN'
+         * 3. Update the workflow to use: token: ${{ secrets.TRAFFIC_TOKEN }}
+         * 
+         * Without elevated permissions, this script will still track:
+         * - Stars, forks, watchers, size, issues
+         * - Repository metadata and growth over time
+         */
+        
         const { Octokit } = require('@octokit/rest');
         const createCsvWriter = require('csv-writer').createObjectCsvWriter;
         const csv = require('csv-parser');
@@ -104,45 +122,67 @@ jobs:
           return repos;
         }
 
-        async function getRepoTrafficData(repo) {
+        async function getRepoGrowthData(repo) {
           try {
-            // Get clone data (git clone operations)
-            const cloneResponse = await octokit.rest.repos.getClones({
-              owner: repo.owner.login,
-              repo: repo.name,
-              per: 'week'
-            });
+            // This data is accessible with standard GITHUB_TOKEN
+            const repoData = {
+              stars: repo.stargazers_count,
+              forks: repo.forks_count,
+              watchers: repo.watchers_count,
+              size: repo.size,
+              open_issues: repo.open_issues_count,
+              language: repo.language || 'None',
+              created_at: repo.created_at,
+              updated_at: repo.updated_at,
+              pushed_at: repo.pushed_at,
+              private: repo.private,
+              archived: repo.archived,
+              disabled: repo.disabled
+            };
 
-            // Get view data (repository page views)
-            const viewResponse = await octokit.rest.repos.getViews({
-              owner: repo.owner.login,
-              repo: repo.name,
-              per: 'week'
-            });
+            // Try to get traffic data if permissions allow
+            let trafficData = {
+              clones: { count: 0, uniques: 0 },
+              views: { count: 0, uniques: 0 },
+              referrers: []
+            };
 
-            // Get referrer data (where traffic comes from)
-            let referrers = [];
             try {
-              const referrerResponse = await octokit.rest.repos.getTopReferrers({
+              const cloneResponse = await octokit.rest.repos.getClones({
                 owner: repo.owner.login,
-                repo: repo.name
+                repo: repo.name,
+                per: 'week'
               });
-              referrers = referrerResponse.data;
+              trafficData.clones = cloneResponse.data;
             } catch (error) {
-              console.log(`No referrer data for ${repo.name}`);
+              console.log(`Traffic data not accessible for ${repo.name} (requires elevated permissions)`);
             }
 
-            return {
-              clones: cloneResponse.data,
-              views: viewResponse.data,
-              referrers: referrers
-            };
+            try {
+              const viewResponse = await octokit.rest.repos.getViews({
+                owner: repo.owner.login,
+                repo: repo.name,
+                per: 'week'
+              });
+              trafficData.views = viewResponse.data;
+            } catch (error) {
+              // Expected - traffic data requires special permissions
+            }
+
+            return { repoData, trafficData };
           } catch (error) {
-            console.error(`Error fetching traffic data for ${repo.name}:`, error.message);
+            console.error(`Error fetching data for ${repo.name}:`, error.message);
             return { 
-              clones: { count: 0, uniques: 0, clones: [] },
-              views: { count: 0, uniques: 0, views: [] },
-              referrers: []
+              repoData: {
+                stars: 0, forks: 0, watchers: 0, size: 0, open_issues: 0,
+                language: 'Unknown', created_at: '', updated_at: '', pushed_at: '',
+                private: false, archived: false, disabled: false
+              },
+              trafficData: {
+                clones: { count: 0, uniques: 0 },
+                views: { count: 0, uniques: 0 },
+                referrers: []
+              }
             };
           }
         }
@@ -171,7 +211,7 @@ jobs:
         async function main() {
           try {
             const weekRange = getCurrentWeekRange();
-            console.log(`Tracking downloads for week: ${weekRange.weekId}`);
+            console.log(`Tracking traffic for week: ${weekRange.weekId}`);
             console.log(`Week range: ${weekRange.start.toISOString()} to ${weekRange.end.toISOString()}`);
             
             // Check if this week's data already exists
@@ -182,171 +222,132 @@ jobs:
               return;
             }
             
-            console.log(`Tracking downloads for organization: ${ORG_NAME}`);
+            console.log(`Tracking traffic for organization: ${ORG_NAME}`);
             
             // Get all repositories in the organization
             const allRepos = await getAllRepos();
             console.log(`Total repositories found: ${allRepos.length}`);
             
-            // Track traffic data for each repo
-            const trafficData = [];
+            // Track growth and traffic data for each repo
+            const allData = [];
             let totalOrgClones = 0;
             let totalOrgViews = 0;
+            let totalOrgStars = 0;
+            let totalOrgForks = 0;
             let reposWithTraffic = 0;
             
             for (const repo of allRepos) {
               console.log(`Processing ${repo.name}...`);
-              const { clones, views, referrers } = await getRepoTrafficData(repo);
+              const { repoData, trafficData } = await getRepoGrowthData(repo);
               
-              const repoClones = clones.count || 0;
-              const repoViews = views.count || 0;
+              const repoClones = trafficData.clones.count || 0;
+              const repoViews = trafficData.views.count || 0;
+              
+              // Always add repo data (even if no traffic data)
+              totalOrgClones += repoClones;
+              totalOrgViews += repoViews;
+              totalOrgStars += repoData.stars;
+              totalOrgForks += repoData.forks;
               
               if (repoClones > 0 || repoViews > 0) {
                 reposWithTraffic++;
-                totalOrgClones += repoClones;
-                totalOrgViews += repoViews;
-                
-                // Add summary row for the repo
-                trafficData.push({
-                  week_id: weekRange.weekId,
-                  week_start: weekRange.start.toISOString(),
-                  week_end: weekRange.end.toISOString(),
-                  recorded_date: new Date().toISOString(),
-                  repo_name: repo.name,
-                  repo_full_name: repo.full_name,
-                  entry_type: 'REPO_SUMMARY',
-                  clone_count: repoClones,
-                  unique_clones: clones.uniques || 0,
-                  view_count: repoViews,
-                  unique_views: views.uniques || 0,
-                  top_referrer: referrers.length > 0 ? referrers[0].referrer : '',
-                  top_referrer_count: referrers.length > 0 ? referrers[0].count : 0,
-                  repo_stars: repo.stargazers_count,
-                  repo_forks: repo.forks_count,
-                  repo_language: repo.language || 'None',
-                  repo_private: repo.private,
-                  repo_size: repo.size,
-                  specific_date: '',
-                  daily_clones: '',
-                  daily_views: ''
-                });
-                
-                // Add daily breakdown for clones
-                if (clones.clones && clones.clones.length > 0) {
-                  for (const dailyClone of clones.clones) {
-                    trafficData.push({
-                      week_id: weekRange.weekId,
-                      week_start: weekRange.start.toISOString(),
-                      week_end: weekRange.end.toISOString(),
-                      recorded_date: new Date().toISOString(),
-                      repo_name: repo.name,
-                      repo_full_name: repo.full_name,
-                      entry_type: 'DAILY_CLONES',
-                      clone_count: '',
-                      unique_clones: '',
-                      view_count: '',
-                      unique_views: '',
-                      top_referrer: '',
-                      top_referrer_count: '',
-                      repo_stars: '',
-                      repo_forks: '',
-                      repo_language: '',
-                      repo_private: '',
-                      repo_size: '',
-                      specific_date: dailyClone.timestamp,
-                      daily_clones: dailyClone.count,
-                      daily_views: ''
-                    });
-                  }
-                }
-                
-                // Add daily breakdown for views
-                if (views.views && views.views.length > 0) {
-                  for (const dailyView of views.views) {
-                    trafficData.push({
-                      week_id: weekRange.weekId,
-                      week_start: weekRange.start.toISOString(),
-                      week_end: weekRange.end.toISOString(),
-                      recorded_date: new Date().toISOString(),
-                      repo_name: repo.name,
-                      repo_full_name: repo.full_name,
-                      entry_type: 'DAILY_VIEWS',
-                      clone_count: '',
-                      unique_clones: '',
-                      view_count: '',
-                      unique_views: '',
-                      top_referrer: '',
-                      top_referrer_count: '',
-                      repo_stars: '',
-                      repo_forks: '',
-                      repo_language: '',
-                      repo_private: '',
-                      repo_size: '',
-                      specific_date: dailyView.timestamp,
-                      daily_clones: '',
-                      daily_views: dailyView.count
-                    });
-                  }
-                }
               }
+              
+              // Add repo summary row
+              allData.push({
+                week_id: weekRange.weekId,
+                week_start: weekRange.start.toISOString(),
+                week_end: weekRange.end.toISOString(),
+                recorded_date: new Date().toISOString(),
+                repo_name: repo.name,
+                repo_full_name: repo.full_name,
+                entry_type: 'REPO_SUMMARY',
+                clone_count: repoClones,
+                unique_clones: trafficData.clones.uniques || 0,
+                view_count: repoViews,
+                unique_views: trafficData.views.uniques || 0,
+                top_referrer: trafficData.referrers.length > 0 ? trafficData.referrers[0].referrer : '',
+                top_referrer_count: trafficData.referrers.length > 0 ? trafficData.referrers[0].count : 0,
+                repo_stars: repoData.stars,
+                repo_forks: repoData.forks,
+                repo_watchers: repoData.watchers,
+                repo_language: repoData.language,
+                repo_private: repoData.private,
+                repo_size: repoData.size,
+                repo_open_issues: repoData.open_issues,
+                repo_created_at: repoData.created_at,
+                repo_updated_at: repoData.updated_at,
+                repo_pushed_at: repoData.pushed_at,
+                specific_date: '',
+                daily_clones: '',
+                daily_views: ''
+              });
               
               // Small delay to respect rate limits
               await new Promise(resolve => setTimeout(resolve, 200));
             }
             
-            console.log(`Repositories with traffic: ${reposWithTraffic}`);
+            console.log(`Total repositories processed: ${allRepos.length}`);
+            console.log(`Repositories with traffic data: ${reposWithTraffic}`);
             console.log(`Total organization clones: ${totalOrgClones}`);
             console.log(`Total organization views: ${totalOrgViews}`);
-            console.log(`Total records to add: ${trafficData.length}`);
+            console.log(`Total organization stars: ${totalOrgStars}`);
+            console.log(`Total organization forks: ${totalOrgForks}`);
+            console.log(`Total records to add: ${allData.length}`);
             
-            if (trafficData.length > 0) {
-              // Setup CSV writer
-              const csvWriter = createCsvWriter({
-                path: CSV_FILE,
-                header: [
-                  { id: 'week_id', title: 'Week ID' },
-                  { id: 'week_start', title: 'Week Start' },
-                  { id: 'week_end', title: 'Week End' },
-                  { id: 'recorded_date', title: 'Recorded Date' },
-                  { id: 'repo_name', title: 'Repository Name' },
-                  { id: 'repo_full_name', title: 'Repository Full Name' },
-                  { id: 'entry_type', title: 'Entry Type' },
-                  { id: 'clone_count', title: 'Total Clones' },
-                  { id: 'unique_clones', title: 'Unique Clones' },
-                  { id: 'view_count', title: 'Total Views' },
-                  { id: 'unique_views', title: 'Unique Views' },
-                  { id: 'top_referrer', title: 'Top Referrer' },
-                  { id: 'top_referrer_count', title: 'Top Referrer Count' },
-                  { id: 'repo_stars', title: 'Repository Stars' },
-                  { id: 'repo_forks', title: 'Repository Forks' },
-                  { id: 'repo_language', title: 'Primary Language' },
-                  { id: 'repo_private', title: 'Is Private' },
-                  { id: 'repo_size', title: 'Repository Size (KB)' },
-                  { id: 'specific_date', title: 'Specific Date' },
-                  { id: 'daily_clones', title: 'Daily Clones' },
-                  { id: 'daily_views', title: 'Daily Views' }
-                ],
-                append: fs.existsSync(CSV_FILE)
-              });
-              
-              // Write traffic data to CSV
-              await csvWriter.writeRecords(trafficData);
-              console.log(`Successfully added traffic data for week ${weekRange.weekId} to ${CSV_FILE}`);
-              
-              // Set outputs using environment file (new method)
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `week_id=${weekRange.weekId}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones=${totalOrgClones}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views=${totalOrgViews}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `repos_with_traffic=${reposWithTraffic}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=false\n`);
+            // Always create the CSV file, even if no traffic data
+            const csvWriter = createCsvWriter({
+              path: CSV_FILE,
+              header: [
+                { id: 'week_id', title: 'Week ID' },
+                { id: 'week_start', title: 'Week Start' },
+                { id: 'week_end', title: 'Week End' },
+                { id: 'recorded_date', title: 'Recorded Date' },
+                { id: 'repo_name', title: 'Repository Name' },
+                { id: 'repo_full_name', title: 'Repository Full Name' },
+                { id: 'entry_type', title: 'Entry Type' },
+                { id: 'clone_count', title: 'Total Clones' },
+                { id: 'unique_clones', title: 'Unique Clones' },
+                { id: 'view_count', title: 'Total Views' },
+                { id: 'unique_views', title: 'Unique Views' },
+                { id: 'top_referrer', title: 'Top Referrer' },
+                { id: 'top_referrer_count', title: 'Top Referrer Count' },
+                { id: 'repo_stars', title: 'Repository Stars' },
+                { id: 'repo_forks', title: 'Repository Forks' },
+                { id: 'repo_watchers', title: 'Repository Watchers' },
+                { id: 'repo_language', title: 'Primary Language' },
+                { id: 'repo_private', title: 'Is Private' },
+                { id: 'repo_size', title: 'Repository Size (KB)' },
+                { id: 'repo_open_issues', title: 'Open Issues' },
+                { id: 'repo_created_at', title: 'Repository Created' },
+                { id: 'repo_updated_at', title: 'Repository Updated' },
+                { id: 'repo_pushed_at', title: 'Last Push' },
+                { id: 'specific_date', title: 'Specific Date' },
+                { id: 'daily_clones', title: 'Daily Clones' },
+                { id: 'daily_views', title: 'Daily Views' }
+              ],
+              append: fs.existsSync(CSV_FILE)
+            });
+            
+            // Write data to CSV
+            if (allData.length > 0) {
+              await csvWriter.writeRecords(allData);
+              console.log(`Successfully added ${allData.length} records for week ${weekRange.weekId} to ${CSV_FILE}`);
             } else {
-              console.log('No traffic data found');
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `week_id=${weekRange.weekId}\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones=0\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views=0\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `repos_with_traffic=0\n`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=false\n`);
+              // Create empty CSV with headers if no data
+              await csvWriter.writeRecords([]);
+              console.log(`Created empty CSV file for week ${weekRange.weekId}`);
             }
+            
+            // Set outputs using environment file
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `week_id=${weekRange.weekId}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones=${totalOrgClones}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views=${totalOrgViews}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_stars=${totalOrgStars}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_forks=${totalOrgForks}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `repos_with_traffic=${reposWithTraffic}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_repos=${allRepos.length}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=false\n`);
             
           } catch (error) {
             console.error('Error:', error);
@@ -373,7 +374,7 @@ jobs:
         
         if [[ -n $(git status --porcelain) ]]; then
           git add downloads.csv
-          git commit -m "📊 Weekly traffic tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_clones }} clones, ${{ steps.track.outputs.total_views }} views across ${{ steps.track.outputs.repos_with_traffic }} repos"
+          git commit -m "📊 Weekly repo tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_repos }} repos, ${{ steps.track.outputs.total_stars }} stars, ${{ steps.track.outputs.total_forks }} forks, ${{ steps.track.outputs.total_clones }} clones, ${{ steps.track.outputs.total_views }} views"
           git push
           echo "Changes committed and pushed"
         else
