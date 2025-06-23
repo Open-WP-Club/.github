@@ -250,41 +250,18 @@ jobs:
           });
         }
 
-        async function statsWeekAlreadyExists(weekStart) {
-          if (!fs.existsSync(STATS_FILE)) {
-            return false;
-          }
-          
-          return new Promise((resolve, reject) => {
-            let found = false;
-            fs.createReadStream(STATS_FILE)
-              .pipe(csv())
-              .on('data', (row) => {
-                if (row.week_start === weekStart) {
-                  found = true;
-                }
-              })
-              .on('end', () => {
-                resolve(found);
-              })
-              .on('error', reject);
-          });
-        }
-
         async function main() {
           try {
             const weekRange = getCurrentWeekRange();
             console.log(`Tracking traffic for week: ${weekRange.weekId}`);
             console.log(`Week range: ${weekRange.start.toISOString()} to ${weekRange.end.toISOString()}`);
             
-            // Check if this week's data already exists in both files
+            // Check if this week's data already exists in downloads.csv
             const weekExists = await weekAlreadyExists(weekRange.weekId);
-            const statsWeekExists = await statsWeekAlreadyExists(weekRange.start.toISOString());
             
-            if (weekExists && statsWeekExists) {
-              console.log(`Data for week ${weekRange.weekId} already exists in both files. Skipping...`);
-              fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=true\n`);
-              return;
+            if (weekExists) {
+              console.log(`Data for week ${weekRange.weekId} already exists in downloads.csv. Skipping downloads.csv update...`);
+              console.log(`Will still update stats.csv with current numbers.`);
             }
             
             console.log(`Tracking traffic for organization: ${ORG_NAME}`);
@@ -292,7 +269,7 @@ jobs:
             // Log CSV column structure for reference
             console.log('\n📊 FILE MANAGEMENT:');
             console.log('┌─ downloads.csv: Detailed repository data (appends new rows each week)');
-            console.log('└─ stats.csv: Weekly organization summaries (appends new rows each week for website trends)\n');
+            console.log('└─ stats.csv: Just 3 key metrics - Clones, Views, Stars (appends new row each run)\n');
             
             console.log('📈 DOWNLOADS.CSV COLUMNS:');
             console.log('┌─ TIMING: Week ID, Week Start/End, Recorded Date');
@@ -302,12 +279,10 @@ jobs:
             console.log('├─ DATES: Created, Updated, Last Push');
             console.log('└─ DAILY: Specific Date, Daily Clones/Views (for detailed entries)');
             
-            console.log('\n📊 STATS.CSV COLUMNS (Perfect for Website Charts):');
-            console.log('┌─ TIMING: Week Start/End, Recorded Date');
-            console.log('├─ TRAFFIC: Total Clones, Views, Unique Visitors');
-            console.log('├─ GROWTH: Total Stars, Forks, Watchers');
-            console.log('├─ BREAKDOWN: Private/Public Repos, Repos With Traffic, Repository Size, Open Issues');
-            console.log('└─ HIGHLIGHTS: Most Starred/Forked Repository\n');
+            console.log('\n📊 STATS.CSV COLUMNS (Minimal & Clean):');
+            console.log('┌─ Total Clones: Git clone operations across all repos');
+            console.log('├─ Total Views: Repository page views across all repos');  
+            console.log('└─ Total Stars: Current star count across all repos\n');
             
             // Get all repositories in the organization
             const allRepos = await getAllRepos();
@@ -386,7 +361,7 @@ jobs:
             
             console.log('\n📈 WEEKLY UPDATE SUMMARY:');
             console.log(`• downloads.csv: ${!weekExists ? '✅ Appended' : '⏭️ Skipped'} ${allData.length} detailed records for week ${weekRange.weekId}`);
-            console.log(`• stats.csv: ${!statsWeekExists ? '✅ Appended' : '⏭️ Skipped'} 1 summary row for week ${weekRange.weekId}`);
+            console.log(`• stats.csv: ✅ Appended 1 summary row with current organization totals`);
             console.log(`• Repository data: ✅ Processed all ${allRepos.length} repositories`);
             console.log(`• Traffic data: ${reposWithTraffic > 0 ? '✅' : '❌'} Available for ${reposWithTraffic} repositories`);
             console.log(`• Organization totals: ${totalOrgStars} stars, ${totalOrgForks} forks`);
@@ -442,34 +417,19 @@ jobs:
               }
             }
             
-            // Always append to the summary stats CSV file (if not already exists for this week)
-            if (!statsWeekExists) {
-              // Check if this is the first time creating the stats file
-              const isFirstStatsEntry = !fs.existsSync(STATS_FILE);
-              
-              const statsWriter = createCsvWriter({
-                path: STATS_FILE,
-                header: [
-                  { id: 'week_start', title: 'Week Start' },
-                  { id: 'week_end', title: 'Week End' },
-                  { id: 'recorded_date', title: 'Recorded Date' },
-                  { id: 'total_clones', title: 'Total Clones' },
-                  { id: 'total_unique_clones', title: 'Total Unique Clones' },
-                  { id: 'total_views', title: 'Total Views' },
-                  { id: 'total_unique_views', title: 'Total Unique Views' },
-                  { id: 'total_stars', title: 'Total Stars' },
-                  { id: 'total_forks', title: 'Total Forks' },
-                  { id: 'total_watchers', title: 'Total Watchers' },
-                  { id: 'repos_with_traffic', title: 'Repos With Traffic Data' },
-                  { id: 'total_repo_size_kb', title: 'Total Repository Size (KB)' },
-                  { id: 'total_open_issues', title: 'Total Open Issues' },
-                  { id: 'private_repos', title: 'Private Repositories' },
-                  { id: 'public_repos', title: 'Public Repositories' },
-                  { id: 'most_starred_repo', title: 'Most Starred Repository' },
-                  { id: 'most_forked_repo', title: 'Most Forked Repository' }
-                ],
-                append: !isFirstStatsEntry  // Only append if file already exists, otherwise write headers
-              });
+            // Always append current stats to stats.csv 
+            // Check if this is the first time creating the stats file
+            const isFirstStatsEntry = !fs.existsSync(STATS_FILE);
+            
+            const statsWriter = createCsvWriter({
+              path: STATS_FILE,
+              header: [
+                { id: 'total_clones', title: 'Total Clones' },
+                { id: 'total_views', title: 'Total Views' },
+                { id: 'total_stars', title: 'Total Stars' }
+              ],
+              append: !isFirstStatsEntry  // Only append if file already exists, otherwise write headers
+            });
 
               // Calculate summary statistics using stored data
               let totalUniqueClones = 0;
@@ -503,9 +463,6 @@ jobs:
               }
 
               const summaryStats = [{
-                week_start: weekRange.start.toISOString(),
-                week_end: weekRange.end.toISOString(),
-                recorded_date: new Date().toISOString(),
                 total_clones: totalOrgClones,
                 total_unique_clones: totalUniqueClones,
                 total_views: totalOrgViews,
@@ -522,9 +479,8 @@ jobs:
                 most_forked_repo: mostForkedRepo.name
               }];
 
-              await statsWriter.writeRecords(summaryStats);
-              console.log(`Successfully appended summary stats for week ${weekRange.weekId} to ${STATS_FILE}`);
-            }
+            await statsWriter.writeRecords(summaryStats);
+            console.log(`Successfully appended current stats to ${STATS_FILE}`);
             
             // Set outputs using environment file
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `week_id=${weekRange.weekId}\n`);
@@ -534,7 +490,7 @@ jobs:
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_forks=${totalOrgForks}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `repos_with_traffic=${reposWithTraffic}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_repos=${allRepos.length}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=false\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=${weekExists}\n`);
             
           } catch (error) {
             console.error('Error:', error);
@@ -552,7 +508,6 @@ jobs:
       run: node track-downloads.js
       
     - name: Commit and push changes
-      if: steps.track.outputs.skipped != 'true'
       env:
         GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
       run: |
@@ -567,10 +522,6 @@ jobs:
         else
           echo "No changes to commit"
         fi
-        
-    - name: Skip notification
-      if: steps.track.outputs.skipped == 'true'
-      run: echo "Skipped - data for this week already exists"
         
     - name: Upload CSV files as artifacts
       uses: actions/upload-artifact@v4
