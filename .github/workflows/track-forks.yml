@@ -14,7 +14,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.TRAFFIC_TOKEN }}
+        token: ${{ secrets.WORKFLOW_TOKEN || github.token }}
         
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -361,13 +361,13 @@ jobs:
     - name: Run traffic tracking
       id: track
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
       run: node track-downloads.js
       
     - name: Commit and push changes
       if: steps.track.outputs.skipped != 'true'
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
