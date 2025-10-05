@@ -5,9 +5,6 @@ StageGuard,StageGuard,"A WordPress plugin designed to clearly indicate that a we
 WC-Pre-order,WC Pre Order,"WooCommerce Pre-Order Plugin - It checks for a specific promo code on certain products and limits if not applied.",1.0.0,https://github.com/Open-WP-Club/WC-Pre-order
 better-user-search,Better User Search,"Improves the search for users in the admin significantly: Search for first name, last, email and much more of users instead of only nicename.",1.0.0,https://github.com/Open-WP-Club/better-user-search
 wp-rank-math-automation,Wp Rank Math Automation,"Optimize WooCommerce products for SEO using RankMath",N/A,https://github.com/Open-WP-Club/wp-rank-math-automation
-WP-Clean,WP Clean,"No description available",N/A,https://github.com/Open-WP-Club/WP-Clean
-wp-disabling-comments,Wp Disabling Comments,"The plugin allows you to completely remove comment-related features from your WordPress site's front-end and admin areas.",1.0.0,https://github.com/Open-WP-Club/wp-disabling-comments
-wp-feature-remover,Wp Feature Remover,"Removing parts of the WordPress funcionallity you don't use",N/A,https://github.com/Open-WP-Club/wp-feature-remover
 wp-internal-linking,Wp Internal Linking,"WordPress plugin to manage and analyze internal linking in your WordPress website.",1.0.0,https://github.com/Open-WP-Club/wp-internal-linking
 resume-builder,Resume Builder,"Display your resume on a WordPress page or post - simple way to manage all the needed information",1.0.0,https://github.com/Open-WP-Club/resume-builder
 plugin-hub,Plugin Hub,"Plugin Hub is Open WP Club official way of installing/updating plugins from their official repos.",1.0.1,https://github.com/Open-WP-Club/plugin-hub
