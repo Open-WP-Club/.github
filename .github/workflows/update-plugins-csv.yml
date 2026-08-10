@@ -41,11 +41,19 @@ jobs:
             return 1
           }
 
-          # Fetch repositories (excluding archived ones)
+          # Fetch repositories (excluding archived ones), paginated
           echo "Fetching repositories..."
-          REPOS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/orgs/$ORG/repos?per_page=100" | \
-            jq -r '.[] | select(.archived == false) | @base64')
+          REPOS=""
+          PAGE=1
+          while :; do
+            RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+              "https://api.github.com/orgs/$ORG/repos?per_page=100&page=$PAGE")
+            PAGE_REPOS=$(echo "$RESPONSE" | jq -r '.[] | select(.archived == false) | @base64')
+            [[ -n "$PAGE_REPOS" ]] && REPOS+="$PAGE_REPOS"$'\n'
+            COUNT=$(echo "$RESPONSE" | jq 'length')
+            [[ "$COUNT" -lt 100 ]] && break
+            PAGE=$((PAGE + 1))
+          done
 
           # Prepare CSV data
           echo "repo-name,Display Name,Description,Version,Repo URL" > plugins.csv
@@ -57,7 +65,7 @@ jobs:
             REPO_NAME=$(echo "$REPO_DATA" | jq -r '.name')
             
             if ! in_blocklist "$REPO_NAME"; then
-              DESCRIPTION=$(echo "$REPO_DATA" | jq -r '.description // "No description available"')
+              DESCRIPTION=$(echo "$REPO_DATA" | jq -r '.description // "No description available"' | sed 's/"/""/g')
               HTML_URL=$(echo "$REPO_DATA" | jq -r '.html_url')
               DISPLAY_NAME=$(echo "$REPO_NAME" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++){ $i=toupper(substr($i,1,1)) substr($i,2) }}1')
               
@@ -85,15 +93,22 @@ jobs:
           if [[ -n "$FILE_SHA" ]]; then
             echo "Updating existing plugins.csv file"
             CONTENT=$(base64 -w 0 plugins.csv)
-            curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
-              -d "{\"message\":\"Update plugins.csv\",\"content\":\"$CONTENT\",\"sha\":\"$FILE_SHA\"}" \
-              "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
+            PAYLOAD="{\"message\":\"Update plugins.csv\",\"content\":\"$CONTENT\",\"sha\":\"$FILE_SHA\"}"
           else
             echo "Creating new plugins.csv file"
             CONTENT=$(base64 -w 0 plugins.csv)
-            curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
-              -d "{\"message\":\"Create plugins.csv\",\"content\":\"$CONTENT\"}" \
-              "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv"
+            PAYLOAD="{\"message\":\"Create plugins.csv\",\"content\":\"$CONTENT\"}"
+          fi
+
+          HTTP_CODE=$(curl -s -o /tmp/put_response.json -w "%{http_code}" -X PUT \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -d "$PAYLOAD" \
+            "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv")
+
+          if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "201" ]]; then
+            echo "Failed to update plugins.csv (HTTP $HTTP_CODE):"
+            cat /tmp/put_response.json
+            exit 1
           fi
 
           echo "plugins.csv has been updated successfully"

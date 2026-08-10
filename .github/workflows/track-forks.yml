@@ -113,25 +113,34 @@ jobs:
         const STATS_FILE = 'stats.csv';
         const ORG_NAME = process.env.GITHUB_REPOSITORY.split('/')[0];
 
+        // ISO-8601 week number (unique per calendar week, doesn't repeat across months)
+        function getISOWeekId(date) {
+          const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+          d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+          const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+          return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+        }
+
         // Get the current week's date range (Sunday to Saturday)
         function getCurrentWeekRange() {
           const now = new Date();
           const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-          
+
           // Calculate the start of the current week (Sunday)
           const weekStart = new Date(now);
           weekStart.setDate(now.getDate() - currentDay);
           weekStart.setHours(0, 0, 0, 0);
-          
+
           // Calculate the end of the current week (Saturday)
           const weekEnd = new Date(weekStart);
           weekEnd.setDate(weekStart.getDate() + 6);
           weekEnd.setHours(23, 59, 59, 999);
-          
+
           return {
             start: weekStart,
             end: weekEnd,
-            weekId: `${weekStart.getFullYear()}-W${Math.ceil(weekStart.getDate() / 7)}`
+            weekId: getISOWeekId(weekStart)
           };
         }
 
@@ -239,7 +248,7 @@ jobs:
             fs.createReadStream(CSV_FILE)
               .pipe(csv())
               .on('data', (row) => {
-                if (row.week_id === weekId) {
+                if (row['Week ID'] === weekId) {
                   found = true;
                 }
               })
@@ -431,52 +440,10 @@ jobs:
               append: !isFirstStatsEntry  // Only append if file already exists, otherwise write headers
             });
 
-              // Calculate summary statistics using stored data
-              let totalUniqueClones = 0;
-              let totalUniqueViews = 0;
-              let totalWatchers = 0;
-              let totalRepoSize = 0;
-              let totalOpenIssues = 0;
-              let privateRepos = 0;
-              let publicRepos = 0;
-              let mostStarredRepo = { name: '', stars: 0 };
-              let mostForkedRepo = { name: '', forks: 0 };
-
-              // Process stored repo data for summary stats
-              for (const [repoName, { repo, repoData, trafficData }] of repoDataMap) {
-                totalUniqueClones += trafficData.clones.uniques || 0;
-                totalUniqueViews += trafficData.views.uniques || 0;
-                totalWatchers += repoData.watchers;
-                totalRepoSize += repoData.size;
-                totalOpenIssues += repoData.open_issues;
-                
-                if (repoData.private) privateRepos++;
-                else publicRepos++;
-                
-                // Track most starred/forked
-                if (repoData.stars > mostStarredRepo.stars) {
-                  mostStarredRepo = { name: repo.name, stars: repoData.stars };
-                }
-                if (repoData.forks > mostForkedRepo.forks) {
-                  mostForkedRepo = { name: repo.name, forks: repoData.forks };
-                }
-              }
-
               const summaryStats = [{
                 total_clones: totalOrgClones,
-                total_unique_clones: totalUniqueClones,
                 total_views: totalOrgViews,
-                total_unique_views: totalUniqueViews,
-                total_stars: totalOrgStars,
-                total_forks: totalOrgForks,
-                total_watchers: totalWatchers,
-                repos_with_traffic: reposWithTraffic,
-                total_repo_size_kb: totalRepoSize,
-                total_open_issues: totalOpenIssues,
-                private_repos: privateRepos,
-                public_repos: publicRepos,
-                most_starred_repo: mostStarredRepo.name,
-                most_forked_repo: mostForkedRepo.name
+                total_stars: totalOrgStars
               }];
 
             await statsWriter.writeRecords(summaryStats);
