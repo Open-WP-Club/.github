@@ -111,6 +111,7 @@ jobs:
 
         const CSV_FILE = 'downloads.csv';
         const STATS_FILE = 'stats.csv';
+        const STATE_FILE = 'traffic-state.json';
         const ORG_NAME = process.env.GITHUB_REPOSITORY.split('/')[0];
 
         // ISO-8601 week number (unique per calendar week, doesn't repeat across months)
@@ -202,7 +203,7 @@ jobs:
               const cloneResponse = await octokit.rest.repos.getClones({
                 owner: repo.owner.login,
                 repo: repo.name,
-                per: 'week'
+                per: 'day'
               });
               trafficData.clones = cloneResponse.data;
             } catch (error) {
@@ -213,7 +214,7 @@ jobs:
               const viewResponse = await octokit.rest.repos.getViews({
                 owner: repo.owner.login,
                 repo: repo.name,
-                per: 'week'
+                per: 'day'
               });
               trafficData.views = viewResponse.data;
             } catch (error) {
@@ -300,19 +301,35 @@ jobs:
             // Track growth and traffic data for each repo
             const allData = [];
             const repoDataMap = new Map(); // Store repo data for summary stats
+            const dailyClonesMap = {}; // date (YYYY-MM-DD) -> clones across all repos
+            const dailyViewsMap = {}; // date (YYYY-MM-DD) -> views across all repos
             let totalOrgClones = 0;
             let totalOrgViews = 0;
             let totalOrgStars = 0;
             let totalOrgForks = 0;
+            let totalOrgWatchers = 0;
             let reposWithTraffic = 0;
-            
+
             for (const repo of allRepos) {
               console.log(`Processing ${repo.name}...`);
               const { repoData, trafficData } = await getRepoGrowthData(repo);
-              
+
               // Store for summary calculations
               repoDataMap.set(repo.name, { repo, repoData, trafficData });
-              
+
+              // GitHub's traffic API only exposes the trailing 14 days, so we
+              // aggregate the daily breakdown here and let the cumulative
+              // total (below) track everything ever seen, without double-
+              // counting the overlap between consecutive weekly runs.
+              for (const day of (trafficData.clones.clones || [])) {
+                const date = day.timestamp.slice(0, 10);
+                dailyClonesMap[date] = (dailyClonesMap[date] || 0) + day.count;
+              }
+              for (const day of (trafficData.views.views || [])) {
+                const date = day.timestamp.slice(0, 10);
+                dailyViewsMap[date] = (dailyViewsMap[date] || 0) + day.count;
+              }
+
               const repoClones = trafficData.clones.count || 0;
               const repoViews = trafficData.views.count || 0;
               
@@ -321,7 +338,8 @@ jobs:
               totalOrgViews += repoViews;
               totalOrgStars += repoData.stars;
               totalOrgForks += repoData.forks;
-              
+              totalOrgWatchers += repoData.watchers;
+
               if (repoClones > 0 || repoViews > 0) {
                 reposWithTraffic++;
               }
@@ -396,9 +414,9 @@ jobs:
                   { id: 'repo_name', title: 'Repository Name' },
                   { id: 'repo_full_name', title: 'Repository Full Name' },
                   { id: 'entry_type', title: 'Entry Type' },
-                  { id: 'clone_count', title: 'Total Clones' },
+                  { id: 'clone_count', title: 'Clones (14d)' },
                   { id: 'unique_clones', title: 'Unique Clones' },
-                  { id: 'view_count', title: 'Total Views' },
+                  { id: 'view_count', title: 'Views (14d)' },
                   { id: 'unique_views', title: 'Unique Views' },
                   { id: 'top_referrer', title: 'Top Referrer' },
                   { id: 'top_referrer_count', title: 'Top Referrer Count' },
@@ -426,16 +444,47 @@ jobs:
               }
             }
             
-            // Always append current stats to stats.csv 
+            // Update the all-time cumulative clones/views counter.
+            // GitHub's traffic API only exposes a trailing 14-day window, and
+            // consecutive weekly runs overlap by ~7 days, so we can't just
+            // sum totalOrgClones/totalOrgViews across rows without double-
+            // counting. Instead we track which calendar days have already
+            // been counted (lastRecordedDate) and only add newer ones.
+            const trafficState = fs.existsSync(STATE_FILE)
+              ? JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))
+              : { lastRecordedDate: null, cumulativeClones: 0, cumulativeViews: 0 };
+
+            const allTrafficDates = [...new Set([...Object.keys(dailyClonesMap), ...Object.keys(dailyViewsMap)])].sort();
+            for (const date of allTrafficDates) {
+              if (!trafficState.lastRecordedDate || date > trafficState.lastRecordedDate) {
+                trafficState.cumulativeClones += dailyClonesMap[date] || 0;
+                trafficState.cumulativeViews += dailyViewsMap[date] || 0;
+                trafficState.lastRecordedDate = date;
+              }
+            }
+
+            // Current (not cumulative) snapshot values - these just overwrite
+            // with the latest count each run, for the website to show as-is.
+            trafficState.totalStars = totalOrgStars;
+            trafficState.totalForks = totalOrgForks;
+            trafficState.totalWatchers = totalOrgWatchers;
+            trafficState.totalRepos = allRepos.length;
+            trafficState.updatedAt = new Date().toISOString();
+
+            fs.writeFileSync(STATE_FILE, JSON.stringify(trafficState, null, 2));
+
+            // Always append current stats to stats.csv
             // Check if this is the first time creating the stats file
             const isFirstStatsEntry = !fs.existsSync(STATS_FILE);
-            
+
             const statsWriter = createCsvWriter({
               path: STATS_FILE,
               header: [
-                { id: 'total_clones', title: 'Total Clones' },
-                { id: 'total_views', title: 'Total Views' },
-                { id: 'total_stars', title: 'Total Stars' }
+                { id: 'total_clones', title: 'Clones (14d)' },
+                { id: 'total_views', title: 'Views (14d)' },
+                { id: 'total_stars', title: 'Total Stars' },
+                { id: 'total_clones_alltime', title: 'Total Clones (All-Time)' },
+                { id: 'total_views_alltime', title: 'Total Views (All-Time)' }
               ],
               append: !isFirstStatsEntry  // Only append if file already exists, otherwise write headers
             });
@@ -443,16 +492,21 @@ jobs:
               const summaryStats = [{
                 total_clones: totalOrgClones,
                 total_views: totalOrgViews,
-                total_stars: totalOrgStars
+                total_stars: totalOrgStars,
+                total_clones_alltime: trafficState.cumulativeClones,
+                total_views_alltime: trafficState.cumulativeViews
               }];
 
             await statsWriter.writeRecords(summaryStats);
             console.log(`Successfully appended current stats to ${STATS_FILE}`);
+            console.log(`All-time totals: ${trafficState.cumulativeClones} clones, ${trafficState.cumulativeViews} views`);
             
             // Set outputs using environment file
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `week_id=${weekRange.weekId}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones=${totalOrgClones}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views=${totalOrgViews}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones_alltime=${trafficState.cumulativeClones}\n`);
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views_alltime=${trafficState.cumulativeViews}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_stars=${totalOrgStars}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_forks=${totalOrgForks}\n`);
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `repos_with_traffic=${reposWithTraffic}\n`);
@@ -482,7 +536,7 @@ jobs:
         git config --local user.name "GitHub Action"
         
         if [[ -n $(git status --porcelain) ]]; then
-          git add downloads.csv stats.csv
+          git add downloads.csv stats.csv traffic-state.json
           git commit -m "📊 Weekly repo tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_repos }} repos, ${{ steps.track.outputs.total_stars }} stars, ${{ steps.track.outputs.total_forks }} forks, ${{ steps.track.outputs.total_clones }} clones, ${{ steps.track.outputs.total_views }} views"
           git push
           echo "Changes committed and pushed"
