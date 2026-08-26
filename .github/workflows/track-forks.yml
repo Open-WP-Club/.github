@@ -2,553 +2,60 @@ name: Track Weekly Repository Growth & Traffic
 
 on:
   schedule:
-    # Run every Sunday at 2 AM UTC to capture the previous week
     - cron: '0 2 * * 0'
-  workflow_dispatch: # Allow manual triggering
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: repository-data-writers
+  cancel-in-progress: false
 
 jobs:
   track-growth:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 15
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.WORKFLOW_TOKEN || github.token }}
-        
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        
-    - name: Create package.json and install dependencies
-      run: |
-        cat > package.json << 'EOF'
-        {
-          "name": "github-traffic-tracker",
-          "version": "1.0.0",
-          "description": "Track GitHub organization traffic (clones and views)",
-          "main": "track-downloads.js",
-          "dependencies": {
-            "@octokit/rest": "^20.0.0",
-            "csv-writer": "^1.6.0",
-            "csv-parser": "^3.0.0"
-          }
-        }
-        EOF
-        npm install
-        
-    - name: Create traffic tracking script
-      run: |
-        cat > track-downloads.js << 'EOF'
-        /*
-         * GitHub Repository Tracker
-         * 
-         * This script tracks repository growth metrics and attempts to get traffic data.
-         * 
-         * TRAFFIC DATA PERMISSION NOTE:
-         * The default GITHUB_TOKEN doesn't have permission to access traffic data.
-         * To enable traffic tracking, you need to:
-         * 
-         * 1. Create a Personal Access Token with 'repo' scope
-         * 2. Add it as a repository secret named 'WORKFLOW_TOKEN'
-         * 3. Update the workflow to use: token: ${{ secrets.WORKFLOW_TOKEN }}
-         * 
-         * CSV COLUMNS EXPLANATION:
-         * 
-         * TIMING & IDENTIFICATION:
-         * • Week ID: Week identifier (e.g., "2025-W25")
-         * • Week Start: Start date of the tracking week (ISO format)
-         * • Week End: End date of the tracking week (ISO format)
-         * • Recorded Date: When this data was captured (ISO format)
-         * 
-         * REPOSITORY IDENTIFICATION:
-         * • Repository Name: Short name of the repo (e.g., "wp-rank-math-automation")
-         * • Repository Full Name: Full name with org (e.g., "Open-WP-Club/wp-rank-math-automation")
-         * • Entry Type: Type of data row ("REPO_SUMMARY", "DAILY_CLONES", "DAILY_VIEWS")
-         * 
-         * TRAFFIC DATA (requires elevated permissions):
-         * • Total Clones: Number of git clone operations in the week
-         * • Unique Clones: Number of unique users who cloned the repo
-         * • Total Views: Number of repository page views in the week
-         * • Unique Views: Number of unique visitors to the repo page
-         * • Top Referrer: Main source of traffic (e.g., "github.com", "google.com")
-         * • Top Referrer Count: Number of visits from the top referrer
-         * 
-         * REPOSITORY METRICS (always available):
-         * • Repository Stars: Current number of stars/favorites
-         * • Repository Forks: Current number of forks
-         * • Repository Watchers: Current number of watchers/subscribers
-         * • Primary Language: Main programming language (e.g., "PHP", "JavaScript")
-         * • Is Private: Whether the repository is private (true/false)
-         * • Repository Size (KB): Size of the repository in kilobytes
-         * • Open Issues: Current number of open issues
-         * 
-         * REPOSITORY DATES:
-         * • Repository Created: When the repository was originally created
-         * • Repository Updated: When repository metadata was last updated
-         * • Last Push: When code was last committed/pushed
-         * 
-         * DAILY BREAKDOWN (for detailed analysis):
-         * • Specific Date: Date for daily breakdown entries
-         * • Daily Clones: Clone count for a specific day
-         * • Daily Views: View count for a specific day
-         * 
-         * ENTRY TYPES:
-         * • REPO_SUMMARY: Weekly totals for each repository
-         * • DAILY_CLONES: Day-by-day clone breakdown (if traffic data available)
-         * • DAILY_VIEWS: Day-by-day view breakdown (if traffic data available)
-         */
-        
-        const { Octokit } = require('@octokit/rest');
-        const createCsvWriter = require('csv-writer').createObjectCsvWriter;
-        const csv = require('csv-parser');
-        const fs = require('fs');
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          token: ${{ secrets.WORKFLOW_TOKEN || github.token }}
 
-        const octokit = new Octokit({
-          auth: process.env.GITHUB_TOKEN,
-        });
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
 
-        const CSV_FILE = 'downloads.csv';
-        const STATS_FILE = 'stats.csv';
-        const STATE_FILE = 'traffic-state.json';
-        const ORG_NAME = process.env.GITHUB_REPOSITORY.split('/')[0];
+      - name: Track repository traffic
+        id: track
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
+        run: node scripts/track-repository-traffic.mjs
 
-        // ISO-8601 week number (unique per calendar week, doesn't repeat across months)
-        function getISOWeekId(date) {
-          const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-          d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-          const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-          const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-          return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-        }
+      - name: Commit and push changes
+        run: |
+          if git diff --quiet -- downloads.csv stats.csv traffic-state.json; then
+            echo "No tracking changes to commit"
+            exit 0
+          fi
 
-        // Get the current week's date range (Sunday to Saturday)
-        function getCurrentWeekRange() {
-          const now = new Date();
-          const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-
-          // Calculate the start of the current week (Sunday)
-          const weekStart = new Date(now);
-          weekStart.setDate(now.getDate() - currentDay);
-          weekStart.setHours(0, 0, 0, 0);
-
-          // Calculate the end of the current week (Saturday)
-          const weekEnd = new Date(weekStart);
-          weekEnd.setDate(weekStart.getDate() + 6);
-          weekEnd.setHours(23, 59, 59, 999);
-
-          return {
-            start: weekStart,
-            end: weekEnd,
-            weekId: getISOWeekId(weekStart)
-          };
-        }
-
-        async function getAllRepos() {
-          const repos = [];
-          let page = 1;
-          let hasNext = true;
-
-          while (hasNext) {
-            try {
-              const response = await octokit.rest.repos.listForOrg({
-                org: ORG_NAME,
-                type: 'all',
-                per_page: 100,
-                page: page,
-              });
-
-              repos.push(...response.data);
-              
-              hasNext = response.data.length === 100;
-              page++;
-              
-              console.log(`Fetched page ${page - 1}, got ${response.data.length} repos`);
-            } catch (error) {
-              console.error(`Error fetching repos page ${page}:`, error.message);
-              break;
-            }
-          }
-
-          return repos;
-        }
-
-        async function getRepoGrowthData(repo) {
-          try {
-            // This data is accessible with standard GITHUB_TOKEN
-            const repoData = {
-              stars: repo.stargazers_count,
-              forks: repo.forks_count,
-              watchers: repo.watchers_count,
-              size: repo.size,
-              open_issues: repo.open_issues_count,
-              language: repo.language || 'None',
-              created_at: repo.created_at,
-              updated_at: repo.updated_at,
-              pushed_at: repo.pushed_at,
-              private: repo.private,
-              archived: repo.archived,
-              disabled: repo.disabled
-            };
-
-            // Try to get traffic data if permissions allow
-            let trafficData = {
-              clones: { count: 0, uniques: 0 },
-              views: { count: 0, uniques: 0 },
-              referrers: []
-            };
-
-            try {
-              const cloneResponse = await octokit.rest.repos.getClones({
-                owner: repo.owner.login,
-                repo: repo.name,
-                per: 'day'
-              });
-              trafficData.clones = cloneResponse.data;
-            } catch (error) {
-              console.log(`Traffic data not accessible for ${repo.name} (requires elevated permissions)`);
-            }
-
-            try {
-              const viewResponse = await octokit.rest.repos.getViews({
-                owner: repo.owner.login,
-                repo: repo.name,
-                per: 'day'
-              });
-              trafficData.views = viewResponse.data;
-            } catch (error) {
-              // Expected - traffic data requires special permissions
-            }
-
-            return { repoData, trafficData };
-          } catch (error) {
-            console.error(`Error fetching data for ${repo.name}:`, error.message);
-            return { 
-              repoData: {
-                stars: 0, forks: 0, watchers: 0, size: 0, open_issues: 0,
-                language: 'Unknown', created_at: '', updated_at: '', pushed_at: '',
-                private: false, archived: false, disabled: false
-              },
-              trafficData: {
-                clones: { count: 0, uniques: 0 },
-                views: { count: 0, uniques: 0 },
-                referrers: []
-              }
-            };
-          }
-        }
-
-        async function weekAlreadyExists(weekId) {
-          if (!fs.existsSync(CSV_FILE)) {
-            return false;
-          }
-          
-          return new Promise((resolve, reject) => {
-            let found = false;
-            fs.createReadStream(CSV_FILE)
-              .pipe(csv())
-              .on('data', (row) => {
-                if (row['Week ID'] === weekId) {
-                  found = true;
-                }
-              })
-              .on('end', () => {
-                resolve(found);
-              })
-              .on('error', reject);
-          });
-        }
-
-        async function main() {
-          try {
-            const weekRange = getCurrentWeekRange();
-            console.log(`Tracking traffic for week: ${weekRange.weekId}`);
-            console.log(`Week range: ${weekRange.start.toISOString()} to ${weekRange.end.toISOString()}`);
-            
-            // Check if this week's data already exists in downloads.csv
-            const weekExists = await weekAlreadyExists(weekRange.weekId);
-            
-            if (weekExists) {
-              console.log(`Data for week ${weekRange.weekId} already exists in downloads.csv. Skipping downloads.csv update...`);
-              console.log(`Will still update stats.csv with current numbers.`);
-            }
-            
-            console.log(`Tracking traffic for organization: ${ORG_NAME}`);
-            
-            // Log CSV column structure for reference
-            console.log('\n📊 FILE MANAGEMENT:');
-            console.log('┌─ downloads.csv: Detailed repository data (appends new rows each week)');
-            console.log('└─ stats.csv: Just 3 key metrics - Clones, Views, Stars (appends new row each run)\n');
-            
-            console.log('📈 DOWNLOADS.CSV COLUMNS:');
-            console.log('┌─ TIMING: Week ID, Week Start/End, Recorded Date');
-            console.log('├─ REPO ID: Repository Name, Full Name, Entry Type');
-            console.log('├─ TRAFFIC: Clones, Views, Unique Visitors, Top Referrer (if permissions allow)');
-            console.log('├─ METRICS: Stars, Forks, Watchers, Language, Size, Issues');
-            console.log('├─ DATES: Created, Updated, Last Push');
-            console.log('└─ DAILY: Specific Date, Daily Clones/Views (for detailed entries)');
-            
-            console.log('\n📊 STATS.CSV COLUMNS (Minimal & Clean):');
-            console.log('┌─ Total Clones: Git clone operations across all repos');
-            console.log('├─ Total Views: Repository page views across all repos');  
-            console.log('└─ Total Stars: Current star count across all repos\n');
-            
-            // Get all repositories in the organization
-            const allRepos = await getAllRepos();
-            console.log(`Total repositories found: ${allRepos.length}`);
-            
-            // Track growth and traffic data for each repo
-            const allData = [];
-            const repoDataMap = new Map(); // Store repo data for summary stats
-            const dailyClonesMap = {}; // date (YYYY-MM-DD) -> clones across all repos
-            const dailyViewsMap = {}; // date (YYYY-MM-DD) -> views across all repos
-            let totalOrgClones = 0;
-            let totalOrgViews = 0;
-            let totalOrgStars = 0;
-            let totalOrgForks = 0;
-            let totalOrgWatchers = 0;
-            let reposWithTraffic = 0;
-
-            for (const repo of allRepos) {
-              console.log(`Processing ${repo.name}...`);
-              const { repoData, trafficData } = await getRepoGrowthData(repo);
-
-              // Store for summary calculations
-              repoDataMap.set(repo.name, { repo, repoData, trafficData });
-
-              // GitHub's traffic API only exposes the trailing 14 days, so we
-              // aggregate the daily breakdown here and let the cumulative
-              // total (below) track everything ever seen, without double-
-              // counting the overlap between consecutive weekly runs.
-              for (const day of (trafficData.clones.clones || [])) {
-                const date = day.timestamp.slice(0, 10);
-                dailyClonesMap[date] = (dailyClonesMap[date] || 0) + day.count;
-              }
-              for (const day of (trafficData.views.views || [])) {
-                const date = day.timestamp.slice(0, 10);
-                dailyViewsMap[date] = (dailyViewsMap[date] || 0) + day.count;
-              }
-
-              const repoClones = trafficData.clones.count || 0;
-              const repoViews = trafficData.views.count || 0;
-              
-              // Always add repo data (even if no traffic data)
-              totalOrgClones += repoClones;
-              totalOrgViews += repoViews;
-              totalOrgStars += repoData.stars;
-              totalOrgForks += repoData.forks;
-              totalOrgWatchers += repoData.watchers;
-
-              if (repoClones > 0 || repoViews > 0) {
-                reposWithTraffic++;
-              }
-              
-              // Add repo summary row
-              allData.push({
-                week_id: weekRange.weekId,
-                week_start: weekRange.start.toISOString(),
-                week_end: weekRange.end.toISOString(),
-                recorded_date: new Date().toISOString(),
-                repo_name: repo.name,
-                repo_full_name: repo.full_name,
-                entry_type: 'REPO_SUMMARY',
-                clone_count: repoClones,
-                unique_clones: trafficData.clones.uniques || 0,
-                view_count: repoViews,
-                unique_views: trafficData.views.uniques || 0,
-                top_referrer: trafficData.referrers.length > 0 ? trafficData.referrers[0].referrer : '',
-                top_referrer_count: trafficData.referrers.length > 0 ? trafficData.referrers[0].count : 0,
-                repo_stars: repoData.stars,
-                repo_forks: repoData.forks,
-                repo_watchers: repoData.watchers,
-                repo_language: repoData.language,
-                repo_private: repoData.private,
-                repo_size: repoData.size,
-                repo_open_issues: repoData.open_issues,
-                repo_created_at: repoData.created_at,
-                repo_updated_at: repoData.updated_at,
-                repo_pushed_at: repoData.pushed_at,
-                specific_date: '',
-                daily_clones: '',
-                daily_views: ''
-              });
-              
-              // Small delay to respect rate limits
-              await new Promise(resolve => setTimeout(resolve, 200));
-            }
-            
-            console.log(`Total repositories processed: ${allRepos.length}`);
-            console.log(`Repositories with traffic data: ${reposWithTraffic}`);
-            console.log(`Total organization clones: ${totalOrgClones}`);
-            console.log(`Total organization views: ${totalOrgViews}`);
-            console.log(`Total organization stars: ${totalOrgStars}`);
-            console.log(`Total organization forks: ${totalOrgForks}`);
-            console.log(`Total records to add: ${allData.length}`);
-            
-            console.log('\n📈 WEEKLY UPDATE SUMMARY:');
-            console.log(`• downloads.csv: ${!weekExists ? '✅ Appended' : '⏭️ Skipped'} ${allData.length} detailed records for week ${weekRange.weekId}`);
-            console.log(`• stats.csv: ✅ Appended 1 summary row with current organization totals`);
-            console.log(`• Repository data: ✅ Processed all ${allRepos.length} repositories`);
-            console.log(`• Traffic data: ${reposWithTraffic > 0 ? '✅' : '❌'} Available for ${reposWithTraffic} repositories`);
-            console.log(`• Organization totals: ${totalOrgStars} stars, ${totalOrgForks} forks`);
-            if (totalOrgClones > 0 || totalOrgViews > 0) {
-              console.log(`• Weekly traffic: ${totalOrgClones} clones, ${totalOrgViews} views`);
-            } else {
-              console.log('• Weekly traffic: Not available (requires WORKFLOW_TOKEN with repo scope)');
-            }
-            console.log('\n🌐 Files ready for website integration!');
-            
-            // Always append to the detailed CSV file (if not already exists for this week)
-            if (!weekExists) {
-              // Check if this is the first time creating the downloads file
-              const isFirstDownloadsEntry = !fs.existsSync(CSV_FILE);
-              
-              const csvWriter = createCsvWriter({
-                path: CSV_FILE,
-                header: [
-                  { id: 'week_id', title: 'Week ID' },
-                  { id: 'week_start', title: 'Week Start' },
-                  { id: 'week_end', title: 'Week End' },
-                  { id: 'recorded_date', title: 'Recorded Date' },
-                  { id: 'repo_name', title: 'Repository Name' },
-                  { id: 'repo_full_name', title: 'Repository Full Name' },
-                  { id: 'entry_type', title: 'Entry Type' },
-                  { id: 'clone_count', title: 'Clones (14d)' },
-                  { id: 'unique_clones', title: 'Unique Clones' },
-                  { id: 'view_count', title: 'Views (14d)' },
-                  { id: 'unique_views', title: 'Unique Views' },
-                  { id: 'top_referrer', title: 'Top Referrer' },
-                  { id: 'top_referrer_count', title: 'Top Referrer Count' },
-                  { id: 'repo_stars', title: 'Repository Stars' },
-                  { id: 'repo_forks', title: 'Repository Forks' },
-                  { id: 'repo_watchers', title: 'Repository Watchers' },
-                  { id: 'repo_language', title: 'Primary Language' },
-                  { id: 'repo_private', title: 'Is Private' },
-                  { id: 'repo_size', title: 'Repository Size (KB)' },
-                  { id: 'repo_open_issues', title: 'Open Issues' },
-                  { id: 'repo_created_at', title: 'Repository Created' },
-                  { id: 'repo_updated_at', title: 'Repository Updated' },
-                  { id: 'repo_pushed_at', title: 'Last Push' },
-                  { id: 'specific_date', title: 'Specific Date' },
-                  { id: 'daily_clones', title: 'Daily Clones' },
-                  { id: 'daily_views', title: 'Daily Views' }
-                ],
-                append: !isFirstDownloadsEntry  // Only append if file already exists, otherwise write headers
-              });
-              
-              // Append detailed data to downloads.csv
-              if (allData.length > 0) {
-                await csvWriter.writeRecords(allData);
-                console.log(`Successfully appended ${allData.length} detailed records for week ${weekRange.weekId} to ${CSV_FILE}`);
-              }
-            }
-            
-            // Update the all-time cumulative clones/views counter.
-            // GitHub's traffic API only exposes a trailing 14-day window, and
-            // consecutive weekly runs overlap by ~7 days, so we can't just
-            // sum totalOrgClones/totalOrgViews across rows without double-
-            // counting. Instead we track which calendar days have already
-            // been counted (lastRecordedDate) and only add newer ones.
-            const trafficState = fs.existsSync(STATE_FILE)
-              ? JSON.parse(fs.readFileSync(STATE_FILE, 'utf8'))
-              : { lastRecordedDate: null, cumulativeClones: 0, cumulativeViews: 0 };
-
-            const allTrafficDates = [...new Set([...Object.keys(dailyClonesMap), ...Object.keys(dailyViewsMap)])].sort();
-            for (const date of allTrafficDates) {
-              if (!trafficState.lastRecordedDate || date > trafficState.lastRecordedDate) {
-                trafficState.cumulativeClones += dailyClonesMap[date] || 0;
-                trafficState.cumulativeViews += dailyViewsMap[date] || 0;
-                trafficState.lastRecordedDate = date;
-              }
-            }
-
-            // Current (not cumulative) snapshot values - these just overwrite
-            // with the latest count each run, for the website to show as-is.
-            trafficState.totalStars = totalOrgStars;
-            trafficState.totalForks = totalOrgForks;
-            trafficState.totalWatchers = totalOrgWatchers;
-            trafficState.totalRepos = allRepos.length;
-            trafficState.updatedAt = new Date().toISOString();
-
-            fs.writeFileSync(STATE_FILE, JSON.stringify(trafficState, null, 2));
-
-            // Always append current stats to stats.csv
-            // Check if this is the first time creating the stats file
-            const isFirstStatsEntry = !fs.existsSync(STATS_FILE);
-
-            const statsWriter = createCsvWriter({
-              path: STATS_FILE,
-              header: [
-                { id: 'total_clones', title: 'Clones (14d)' },
-                { id: 'total_views', title: 'Views (14d)' },
-                { id: 'total_stars', title: 'Total Stars' },
-                { id: 'total_clones_alltime', title: 'Total Clones (All-Time)' },
-                { id: 'total_views_alltime', title: 'Total Views (All-Time)' }
-              ],
-              append: !isFirstStatsEntry  // Only append if file already exists, otherwise write headers
-            });
-
-              const summaryStats = [{
-                total_clones: totalOrgClones,
-                total_views: totalOrgViews,
-                total_stars: totalOrgStars,
-                total_clones_alltime: trafficState.cumulativeClones,
-                total_views_alltime: trafficState.cumulativeViews
-              }];
-
-            await statsWriter.writeRecords(summaryStats);
-            console.log(`Successfully appended current stats to ${STATS_FILE}`);
-            console.log(`All-time totals: ${trafficState.cumulativeClones} clones, ${trafficState.cumulativeViews} views`);
-            
-            // Set outputs using environment file
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `week_id=${weekRange.weekId}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones=${totalOrgClones}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views=${totalOrgViews}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_clones_alltime=${trafficState.cumulativeClones}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_views_alltime=${trafficState.cumulativeViews}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_stars=${totalOrgStars}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_forks=${totalOrgForks}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `repos_with_traffic=${reposWithTraffic}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `total_repos=${allRepos.length}\n`);
-            fs.appendFileSync(process.env.GITHUB_OUTPUT, `skipped=${weekExists}\n`);
-            
-          } catch (error) {
-            console.error('Error:', error);
-            process.exit(1);
-          }
-        }
-
-        main();
-        EOF
-        
-    - name: Run traffic tracking
-      id: track
-      env:
-        GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
-      run: node track-downloads.js
-      
-    - name: Commit and push changes
-      env:
-        GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
-      run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        
-        if [[ -n $(git status --porcelain) ]]; then
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
           git add downloads.csv stats.csv traffic-state.json
           git commit -m "📊 Weekly repo tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_repos }} repos, ${{ steps.track.outputs.total_stars }} stars, ${{ steps.track.outputs.total_forks }} forks, ${{ steps.track.outputs.total_clones }} clones, ${{ steps.track.outputs.total_views }} views"
+          git pull --rebase
           git push
-          echo "Changes committed and pushed"
-        else
-          echo "No changes to commit"
-        fi
-        
-    - name: Upload CSV files as artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: weekly-repo-tracking-csvs
-        path: |
-          downloads.csv
-          stats.csv
-        retention-days: 90
+
+      - name: Upload tracking files
+        uses: actions/upload-artifact@v7
+        with:
+          name: weekly-repo-tracking-csvs
+          path: |
+            downloads.csv
+            stats.csv
+            traffic-state.json
+          retention-days: 90
+          if-no-files-found: error

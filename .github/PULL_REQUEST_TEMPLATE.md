@@ -25,5 +25,5 @@ How did you test this? Steps to verify:
 - [ ] Code follows [WordPress Coding Standards](https://developer.wordpress.org/coding-standards/)
 - [ ] User input is sanitized and output is escaped
 - [ ] Tested with the latest WordPress version
-- [ ] Tested with PHP 8.1+
+- [ ] Tested with PHP 8.2+
 - [ ] No backwards-compatibility bloat added for unsupported versions

@@ -1,0 +1,12 @@
+{
+  "name": "open-wp-club-github-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "check": "for file in scripts/*.mjs; do node --check \"$file\" || exit 1; done && node --test"
+  }
+}

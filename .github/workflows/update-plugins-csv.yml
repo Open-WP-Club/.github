@@ -2,113 +2,47 @@ name: Update plugins.csv
 
 on:
   schedule:
-    - cron: '0 0 * * 0'  # Run weekly on Sunday at midnight UTC
-  workflow_dispatch:  # Allow manual triggering
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+concurrency:
+  group: repository-data-writers
+  cancel-in-progress: false
+
 jobs:
   update-plugins-csv:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
-      - name: Install jq
-        run: sudo apt-get install jq
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
 
       - name: Update plugins.csv
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ github.token }}
+          ORGANIZATION: Open-WP-Club
+        run: node scripts/update-plugins-csv.mjs
+
+      - name: Commit and push changes
         run: |
-          #!/bin/bash
-          set -e
-
-          ORG="Open-WP-Club"
-          REPO="${GITHUB_REPOSITORY#*/}"
-          OWNER="${GITHUB_REPOSITORY%%/*}"
-          BLOCKLIST=(".github" "security-checker" "www" "wpfleet" "mu-plugin")
-
-          # Function to check if an item is in the blocklist
-          in_blocklist() {
-            local item="$1"
-            for i in "${BLOCKLIST[@]}"; do
-              if [[ "$i" == "$item" ]]; then
-                return 0
-              fi
-            done
-            return 1
-          }
-
-          # Fetch repositories (excluding archived ones), paginated
-          echo "Fetching repositories..."
-          REPOS=""
-          PAGE=1
-          while :; do
-            RESPONSE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-              "https://api.github.com/orgs/$ORG/repos?per_page=100&page=$PAGE")
-            PAGE_REPOS=$(echo "$RESPONSE" | jq -r '.[] | select(.archived == false) | @base64')
-            [[ -n "$PAGE_REPOS" ]] && REPOS+="$PAGE_REPOS"$'\n'
-            COUNT=$(echo "$RESPONSE" | jq 'length')
-            [[ "$COUNT" -lt 100 ]] && break
-            PAGE=$((PAGE + 1))
-          done
-
-          # Prepare CSV data
-          echo "repo-name,Display Name,Description,Version,Repo URL" > plugins.csv
-
-          # Process each repository
-          for repo in $REPOS; do
-            # Decode repository data
-            REPO_DATA=$(echo "$repo" | base64 --decode)
-            REPO_NAME=$(echo "$REPO_DATA" | jq -r '.name')
-            
-            if ! in_blocklist "$REPO_NAME"; then
-              DESCRIPTION=$(echo "$REPO_DATA" | jq -r '.description // "No description available"' | sed 's/"/""/g')
-              HTML_URL=$(echo "$REPO_DATA" | jq -r '.html_url')
-              DISPLAY_NAME=$(echo "$REPO_NAME" | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++){ $i=toupper(substr($i,1,1)) substr($i,2) }}1')
-              
-              # Get latest release version
-              RELEASE=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-                "https://api.github.com/repos/$ORG/$REPO_NAME/releases/latest")
-              
-              if [[ $(echo "$RELEASE" | jq -r '.message // empty') == "Not Found" ]]; then
-                VERSION="N/A"
-              else
-                VERSION=$(echo "$RELEASE" | jq -r '.tag_name' | sed 's/^v//')
-              fi
-
-              # Append to CSV
-              echo "$REPO_NAME,$DISPLAY_NAME,\"$DESCRIPTION\",$VERSION,$HTML_URL" >> plugins.csv
-            fi
-          done
-
-          echo "CSV file created."
-
-          # Check if plugins.csv exists in the repository
-          FILE_SHA=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv" | jq -r '.sha // empty')
-
-          if [[ -n "$FILE_SHA" ]]; then
-            echo "Updating existing plugins.csv file"
-            CONTENT=$(base64 -w 0 plugins.csv)
-            PAYLOAD="{\"message\":\"Update plugins.csv\",\"content\":\"$CONTENT\",\"sha\":\"$FILE_SHA\"}"
-          else
-            echo "Creating new plugins.csv file"
-            CONTENT=$(base64 -w 0 plugins.csv)
-            PAYLOAD="{\"message\":\"Create plugins.csv\",\"content\":\"$CONTENT\"}"
+          if git diff --quiet -- plugins.csv; then
+            echo "plugins.csv is already current"
+            exit 0
           fi
 
-          HTTP_CODE=$(curl -s -o /tmp/put_response.json -w "%{http_code}" -X PUT \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -d "$PAYLOAD" \
-            "https://api.github.com/repos/$OWNER/$REPO/contents/plugins.csv")
-
-          if [[ "$HTTP_CODE" != "200" && "$HTTP_CODE" != "201" ]]; then
-            echo "Failed to update plugins.csv (HTTP $HTTP_CODE):"
-            cat /tmp/put_response.json
-            exit 1
-          fi
-
-          echo "plugins.csv has been updated successfully"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add plugins.csv
+          git commit -m "Update plugins.csv"
+          git pull --rebase
+          git push
