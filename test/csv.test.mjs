@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { appendCsvRecords, createCsv, escapeCsv } from '../scripts/csv.mjs';
+import { appendCsvRecords, createCsv, escapeCsv, parseCsv } from '../scripts/csv.mjs';
 
 const headers = [
   { id: 'name', title: 'Name' },
@@ -29,4 +29,15 @@ test('appendCsvRecords preserves the existing header', () => {
     ]),
     'Name,Description\nOld,Entry\nNew,Entry\n',
   );
+});
+
+test('parseCsv handles quoted commas, quotes, and newlines', () => {
+  assert.deepEqual(
+    parseCsv('Name,Description\r\nPlugin,"One, ""quoted""\nline"\r\n'),
+    [['Name', 'Description'], ['Plugin', 'One, "quoted"\nline']],
+  );
+});
+
+test('parseCsv rejects an unfinished quoted field', () => {
+  assert.throws(() => parseCsv('Name\n"unfinished'), /unterminated/);
 });

@@ -41,6 +41,29 @@ export async function githubRequest(path, token, { allowNotFound = false } = {})
   return response.json();
 }
 
+export async function githubGraphqlRequest(query, variables, token) {
+  const response = await fetch(`${API_ROOT}/graphql`, {
+    method: 'POST',
+    headers: {
+      ...apiHeaders(token),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(30_000),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new GitHubApiError(response.status, '/graphql', body);
+  }
+
+  const result = await response.json();
+  if (result.errors?.length) {
+    throw new Error(`GitHub GraphQL error: ${JSON.stringify(result.errors).slice(0, 1000)}`);
+  }
+  return result.data;
+}
+
 export async function listOrganizationRepositories(organization, token) {
   const repositories = [];
 

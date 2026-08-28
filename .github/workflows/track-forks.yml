@@ -19,12 +19,12 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           token: ${{ secrets.WORKFLOW_TOKEN || github.token }}
 
       - name: Set up Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: '24'
           package-manager-cache: false
@@ -35,27 +35,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
         run: node scripts/track-repository-traffic.mjs
 
+      - name: Reconcile plugin catalog on the first Sunday of the month
+        env:
+          GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
+          ORGANIZATION: Open-WP-Club
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          current_day="$(date -u +%d)"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$current_day" -le 7 ]]; then
+            node scripts/update-plugins-csv.mjs
+          else
+            echo "Skipping monthly plugin catalog reconciliation"
+          fi
+
       - name: Commit and push changes
         run: |
-          if git diff --quiet -- downloads.csv stats.csv traffic-state.json; then
+          if git diff --quiet -- downloads.csv stats.csv traffic-state.json plugins.csv; then
             echo "No tracking changes to commit"
             exit 0
           fi
 
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add downloads.csv stats.csv traffic-state.json
+          git add downloads.csv stats.csv traffic-state.json plugins.csv
           git commit -m "📊 Weekly repo tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_repos }} repos, ${{ steps.track.outputs.total_stars }} stars, ${{ steps.track.outputs.total_forks }} forks, ${{ steps.track.outputs.total_clones }} clones, ${{ steps.track.outputs.total_views }} views"
           git pull --rebase
           git push
-
-      - name: Upload tracking files
-        uses: actions/upload-artifact@v7
-        with:
-          name: weekly-repo-tracking-csvs
-          path: |
-            downloads.csv
-            stats.csv
-            traffic-state.json
-          retention-days: 90
-          if-no-files-found: error

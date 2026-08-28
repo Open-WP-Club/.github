@@ -7,6 +7,6 @@
     "node": ">=24"
   },
   "scripts": {
-    "check": "for file in scripts/*.mjs; do node --check \"$file\" || exit 1; done && node --test"
+    "check": "for file in scripts/*.mjs actions/*/*.mjs; do node --check \"$file\" || exit 1; done && node --test"
   }
 }

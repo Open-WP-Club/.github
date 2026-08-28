@@ -1,0 +1,70 @@
+name: Update Open WP Club plugin catalog
+description: Update one plugins.csv row from an existing plugin release job
+
+inputs:
+  token:
+    description: Token with Contents write access to Open-WP-Club/.github
+    required: true
+  repo-name:
+    description: Plugin repository name
+    required: true
+  description:
+    description: Plugin repository description
+    required: false
+    default: No description available
+  version:
+    description: Published release tag
+    required: true
+  repo-url:
+    description: Plugin repository URL
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Checkout the plugin catalog
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: Open-WP-Club/.github
+        token: ${{ inputs.token }}
+        path: .open-wp-plugin-catalog
+        fetch-depth: 1
+        sparse-checkout: plugins.csv
+        sparse-checkout-cone-mode: false
+
+    - name: Update the released plugin row
+      shell: bash
+      env:
+        CATALOG_PATH: ${{ github.workspace }}/.open-wp-plugin-catalog/plugins.csv
+        PLUGIN_REPO_NAME: ${{ inputs.repo-name }}
+        PLUGIN_DESCRIPTION: ${{ inputs.description }}
+        PLUGIN_VERSION: ${{ inputs.version }}
+        PLUGIN_REPO_URL: ${{ inputs.repo-url }}
+      run: node "$GITHUB_ACTION_PATH/update.mjs"
+
+    - name: Commit and push the catalog update
+      shell: bash
+      working-directory: .open-wp-plugin-catalog
+      env:
+        PLUGIN_REPO_NAME: ${{ inputs.repo-name }}
+      run: |
+        if git diff --quiet -- plugins.csv; then
+          echo "plugins.csv is already current for $PLUGIN_REPO_NAME"
+          exit 0
+        fi
+
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git add plugins.csv
+        git commit -m "Update $PLUGIN_REPO_NAME in plugins.csv"
+
+        for attempt in 1 2 3; do
+          if git push; then
+            exit 0
+          fi
+          echo "Push attempt $attempt failed; rebasing on the latest catalog"
+          git pull --rebase
+        done
+
+        echo "Unable to push plugins.csv after three attempts" >&2
+        exit 1
