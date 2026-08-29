@@ -1,38 +1,51 @@
 # Open WP Club
 
-**Open-source WordPress plugins built for real-world use.**
+**Open-source tools for WordPress and WooCommerce — plugins, desktop and mobile apps, and hosting infrastructure.**
 
-We build and maintain a growing collection of WordPress and WooCommerce plugins — each solving a specific problem, designed to be lightweight, and free to use.
+We build practical software for store owners, developers, and operations teams. Everything is open source, lightweight where it matters, and designed for real-world use.
 
-## What We Build
+[Explore our projects](https://github.com/orgs/Open-WP-Club/repositories) · [Visit openwpclub.com](https://openwpclub.com) · [Contribute](https://github.com/Open-WP-Club/.github/blob/main/CONTRIBUTING.md)
 
-Our plugins cover common WordPress needs:
+## Featured Apps
 
-| Category | Plugins |
-|----------|---------|
-| **WooCommerce** | [SKU Auto](https://github.com/Open-WP-Club/sku-auto-woocommerce), [Priority Processing](https://github.com/Open-WP-Club/Priority-Processing-WooCommerce), [Inventory Insights](https://github.com/Open-WP-Club/inventory-insights-woocommerce), [Phone Order](https://github.com/Open-WP-Club/phone-order-woo), [Bulk Order Editor](https://github.com/Open-WP-Club/Bulk-Order-Editor), [Pre-Order](https://github.com/Open-WP-Club/WC-Pre-order) |
-| **Security & Privacy** | [User Self Delete](https://github.com/Open-WP-Club/User-Self-Delete), [WP User Blocking](https://github.com/Open-WP-Club/WP-User-Blocking), [Spam User Detective](https://github.com/Open-WP-Club/spam-user-detective-wp), [WP Sanitize](https://github.com/Open-WP-Club/wp-sanitize) |
-| **Admin Tools** | [StageGuard](https://github.com/Open-WP-Club/StageGuard), [Admin Notice Remover](https://github.com/Open-WP-Club/admin-notice-remover), [WP Historical Preservation Mode](https://github.com/Open-WP-Club/WP-Historical-Preservation-Mode), [Disable Gutenberg](https://github.com/Open-WP-Club/disable-gutenberg-for-wp) |
-| **SEO & Content** | [WP Internal Linking](https://github.com/Open-WP-Club/wp-internal-linking), [Rank Math Automation](https://github.com/Open-WP-Club/rank-math-automation-wp), [OpenGraph SVG Generator](https://github.com/Open-WP-Club/opengraph-svg-generator-wp), [LLMs.txt](https://github.com/Open-WP-Club/llms-txt-for-wp) |
-| **Integrations** | [Gravity Forms Shopify](https://github.com/Open-WP-Club/Gravity-Forms-Shopify-Integration), [EU VAT](https://github.com/Open-WP-Club/eu-vat-wp), [Phone Number Validator](https://github.com/Open-WP-Club/WooCommerce-Phone-Number-Validator) |
-| **Display & UI** | [Google Scholar WP](https://github.com/Open-WP-Club/google-scholar-wp), [Logo Link](https://github.com/Open-WP-Club/logo-link-wp), [Team Members Manager](https://github.com/Open-WP-Club/wp-Team-Members-Manager), [Resume Builder](https://github.com/Open-WP-Club/resume-builder) |
+<!-- AUTO:APPS:START -->
+| Product | Platforms | What it does |
+|---|---|---|
+| [FulFill for WooCommerce](https://github.com/Open-WP-Club/FulFill-for-WooCommerce) | Android | A mobile warehouse app for WooCommerce order fulfillment, barcode scanning, pick-and-pack workflows, and offline work. |
+| [StoreOS](https://github.com/Open-WP-Club/StoreOS) | Windows · macOS · Linux | A desktop application for managing WooCommerce orders, products, inventory, and multiple stores from one place. |
+<!-- AUTO:APPS:END -->
 
-> Browse all **40+ plugins** in our [repositories](https://github.com/orgs/Open-WP-Club/repositories).
+## WordPress & WooCommerce Plugins
 
-## Install Our Plugins
+We currently maintain **<!-- AUTO:PLUGIN_COUNT:START -->42<!-- AUTO:PLUGIN_COUNT:END --> open-source plugins**. Here are a few community favourites.
 
-Use **[Plugin Hub](https://github.com/Open-WP-Club/plugin-hub)** to install and update Open WP Club plugins directly from WordPress.
+<!-- AUTO:PLUGINS:START -->
+| Plugin | What it does |
+|---|---|
+| [Google Scholar WP](https://github.com/Open-WP-Club/google-scholar-wp) | A WordPress plugin that allows you to display your Google Scholar profile information on your website using a simple shortcode. |
+| [LLMs Txt For WP](https://github.com/Open-WP-Club/llms-txt-for-wp) | Generate llms.txt and Markdown versions of your WordPress content for AI/LLM consumption. |
+| [Logo Link WP](https://github.com/Open-WP-Club/logo-link-wp) | WordPress plugin that enhances your site logo's functionality by adding customizable click behaviors. Left-click directs to your homepage, while right-click leads to your specified assets page. |
+| [Rank Math Automation WP](https://github.com/Open-WP-Club/rank-math-automation-wp) | Optimize WooCommerce products for SEO using RankMath |
+| [SKU Auto WooCommerce](https://github.com/Open-WP-Club/sku-auto-woocommerce) | A WordPress plugin that automatically generates SKUs for WooCommerce products that don't have them. Features bulk generation and customizable SKU patterns. |
+| [Static Export WP](https://github.com/Open-WP-Club/static-export-wp) | Export your WordPress site as static HTML files. Crawls every page like a browser and saves a complete static copy with all referenced assets. |
+<!-- AUTO:PLUGINS:END -->
 
-Or download any plugin from its GitHub release page and upload via `Plugins > Add New > Upload Plugin`.
+Use [Plugin Hub](https://github.com/Open-WP-Club/plugin-hub) to install and update Open WP Club plugins directly from WordPress, or browse the [complete repository catalog](https://github.com/orgs/Open-WP-Club/repositories).
 
-## Contributing
+## More Open-source Projects
 
-We welcome contributions of all kinds — bug reports, feature requests, code, and documentation.
+<!-- AUTO:PROJECTS:START -->
+| Project | Type | What it does |
+|---|---|---|
+| [Mu Plugin](https://github.com/Open-WP-Club/mu-plugin) | Tool | Must use plugins list for Wordpress |
+| [Security Checker](https://github.com/Open-WP-Club/security-checker) | Tool | The WordPress Security Checker is a tool designed to assess the security posture of WordPress websites. It performs a series of checks to identify potential vulnerabilities and security misconfigurations in WordPress installations. |
+| [WPFleet](https://github.com/Open-WP-Club/wpfleet) | Infrastructure | WPFleet is a production-ready, scalable solution for hosting multiple WordPress sites on a single server using Docker, FrankenPHP, MariaDB, and Redis. |
+<!-- AUTO:PROJECTS:END -->
 
-- Read our [Contributing Guidelines](https://github.com/Open-WP-Club/.github/blob/main/CONTRIBUTING.md)
-- Check out [open issues](https://github.com/orgs/Open-WP-Club/repositories) across our repos
+## Build With Us
+
+Bug reports, feature ideas, code, documentation, and translations are welcome.
+
+- Read the [Contributing Guidelines](https://github.com/Open-WP-Club/.github/blob/main/CONTRIBUTING.md)
+- Explore [open issues across the organization](https://github.com/search?q=org%3AOpen-WP-Club+is%3Aissue+is%3Aopen&type=issues)
 - Follow our [Code of Conduct](https://github.com/Open-WP-Club/.github/blob/main/CODE_OF_CONDUCT.md)
-
-## Links
-
-- [openwpclub.com](https://openwpclub.com)

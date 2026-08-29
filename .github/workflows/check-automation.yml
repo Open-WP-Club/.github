@@ -6,6 +6,8 @@ on:
       - '.github/workflows/**'
       - 'scripts/**'
       - 'actions/**'
+      - 'data/**'
+      - 'profile/README.md'
       - 'test/**'
       - 'package.json'
   push:
@@ -15,6 +17,8 @@ on:
       - '.github/workflows/**'
       - 'scripts/**'
       - 'actions/**'
+      - 'data/**'
+      - 'profile/README.md'
       - 'test/**'
       - 'package.json'
 

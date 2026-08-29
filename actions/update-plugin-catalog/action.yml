@@ -1,23 +1,20 @@
-name: Update Open WP Club plugin catalog
-description: Update one plugins.csv row from an existing plugin release job
+name: Update Open WP Club product catalog
+description: Update one product release in catalog.json and the legacy CSV feed
 
 inputs:
   token:
     description: Token with Contents write access to Open-WP-Club/.github
     required: true
   repo-name:
-    description: Plugin repository name
+    description: Product repository name
     required: true
-  description:
-    description: Plugin repository description
-    required: false
-    default: No description available
   version:
     description: Published release tag
     required: true
-  repo-url:
-    description: Plugin repository URL
-    required: true
+  release-url:
+    description: Published release URL
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -29,34 +26,36 @@ runs:
         token: ${{ inputs.token }}
         path: .open-wp-plugin-catalog
         fetch-depth: 1
-        sparse-checkout: plugins.csv
+        sparse-checkout: |
+          catalog.json
+          plugins.csv
         sparse-checkout-cone-mode: false
 
     - name: Update the released plugin row
       shell: bash
       env:
         CATALOG_PATH: ${{ github.workspace }}/.open-wp-plugin-catalog/plugins.csv
-        PLUGIN_REPO_NAME: ${{ inputs.repo-name }}
-        PLUGIN_DESCRIPTION: ${{ inputs.description }}
-        PLUGIN_VERSION: ${{ inputs.version }}
-        PLUGIN_REPO_URL: ${{ inputs.repo-url }}
+        PRODUCT_CATALOG_PATH: ${{ github.workspace }}/.open-wp-plugin-catalog/catalog.json
+        PRODUCT_REPO_NAME: ${{ inputs.repo-name }}
+        PRODUCT_VERSION: ${{ inputs.version }}
+        PRODUCT_RELEASE_URL: ${{ inputs.release-url }}
       run: node "$GITHUB_ACTION_PATH/update.mjs"
 
     - name: Commit and push the catalog update
       shell: bash
       working-directory: .open-wp-plugin-catalog
       env:
-        PLUGIN_REPO_NAME: ${{ inputs.repo-name }}
+        PRODUCT_REPO_NAME: ${{ inputs.repo-name }}
       run: |
-        if git diff --quiet -- plugins.csv; then
-          echo "plugins.csv is already current for $PLUGIN_REPO_NAME"
+        if git diff --quiet -- catalog.json plugins.csv; then
+          echo "The product catalog is already current for $PRODUCT_REPO_NAME"
           exit 0
         fi
 
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config user.name "github-actions[bot]"
-        git add plugins.csv
-        git commit -m "Update $PLUGIN_REPO_NAME in plugins.csv"
+        git add catalog.json plugins.csv
+        git commit -m "Update $PRODUCT_REPO_NAME in product catalog"
 
         for attempt in 1 2 3; do
           if git push; then
@@ -66,5 +65,5 @@ runs:
           git pull --rebase
         done
 
-        echo "Unable to push plugins.csv after three attempts" >&2
+        echo "Unable to push the product catalog after three attempts" >&2
         exit 1

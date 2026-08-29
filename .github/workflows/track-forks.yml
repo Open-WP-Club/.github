@@ -50,14 +50,14 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          if git diff --quiet -- downloads.csv stats.csv traffic-state.json plugins.csv; then
+          if git diff --quiet -- downloads.csv stats.csv traffic-state.json catalog.json plugins.csv profile/README.md; then
             echo "No tracking changes to commit"
             exit 0
           fi
 
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add downloads.csv stats.csv traffic-state.json plugins.csv
+          git add downloads.csv stats.csv traffic-state.json catalog.json plugins.csv profile/README.md
           git commit -m "📊 Weekly repo tracking: ${{ steps.track.outputs.week_id }} - ${{ steps.track.outputs.total_repos }} repos, ${{ steps.track.outputs.total_stars }} stars, ${{ steps.track.outputs.total_forks }} forks, ${{ steps.track.outputs.total_clones }} clones, ${{ steps.track.outputs.total_views }} views"
           git pull --rebase
           git push

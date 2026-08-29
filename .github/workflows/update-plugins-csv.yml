@@ -1,4 +1,4 @@
-name: Update plugins.csv
+name: Update product catalog and profile
 
 on:
   workflow_dispatch:
@@ -33,14 +33,14 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          if git diff --quiet -- plugins.csv; then
-            echo "plugins.csv is already current"
+          if git diff --quiet -- catalog.json plugins.csv profile/README.md; then
+            echo "The product catalog and profile are already current"
             exit 0
           fi
 
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add plugins.csv
-          git commit -m "Update plugins.csv"
+          git add catalog.json plugins.csv profile/README.md
+          git commit -m "Update product catalog and profile"
           git pull --rebase
           git push

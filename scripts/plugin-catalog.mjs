@@ -17,10 +17,26 @@ export const pluginRepositoryBlocklist = new Set([
 ]);
 
 export function displayNameFromRepository(repositoryName) {
+  const preferredCasing = new Map([
+    ['eu', 'EU'],
+    ['llms', 'LLMs'],
+    ['opengraph', 'OpenGraph'],
+    ['seo', 'SEO'],
+    ['sku', 'SKU'],
+    ['svg', 'SVG'],
+    ['vat', 'VAT'],
+    ['wc', 'WC'],
+    ['woo', 'Woo'],
+    ['woocommerce', 'WooCommerce'],
+    ['wordpress', 'WordPress'],
+    ['wp', 'WP'],
+    ['wpfleet', 'WPFleet'],
+  ]);
   return repositoryName
     .split('-')
     .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .map((word) => preferredCasing.get(word.toLowerCase())
+      || word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
 }
 

@@ -4,17 +4,35 @@ The scripts in this directory power the scheduled GitHub Actions workflows.
 They require Node.js 24 or newer and intentionally use only built-in Node APIs,
 so there are no runtime packages to install or audit.
 
-## Plugin catalog
+## Product catalog
 
 `update-plugins-csv.mjs` uses a paginated GraphQL query to fetch up to 100
-repositories and their latest releases per API call, then rewrites `plugins.csv`.
-The weekly traffic job runs this reconciliation only on the first Sunday of each
-month. It can also be run manually from the `Update plugins.csv` workflow.
+repositories per API call, then writes the shared `catalog.json`, derives the
+legacy-compatible `plugins.csv`, and refreshes the generated sections in
+`profile/README.md`. The weekly traffic job runs this reconciliation only on the
+first Sunday of each month. It can also be run manually from the product catalog
+workflow.
 
 ```sh
 GITHUB_TOKEN="$(gh auth token)" ORGANIZATION=Open-WP-Club \
   node scripts/update-plugins-csv.mjs
 ```
+
+`catalog.json` is the source of truth for the organization profile, website
+catalog, and other consumers. `plugins.csv` remains as a legacy compatibility
+feed for current consumers and includes plugins, apps, and the website; product
+types should be read from `catalog.json` in new integrations.
+
+Classification is automatic. Repository topics such as `desktop-app`,
+`mobile-app`, `electron-app`, `react-native`, `wordpress-plugin`,
+`woocommerce-plugin`, and platform names are preferred; PHP and conventional
+WordPress repository names provide a fallback. Exceptional repositories and
+editorial app metadata live in `data/product-overrides.json`.
+
+Featured apps and plugins are selected automatically from product type, stars,
+forks, topics, and description completeness. Release data is not used, and the
+profile intentionally contains no recent-release section or versions, so
+publishing a release does not cause profile churn.
 
 Published releases should normally update only their own catalog row from the
 existing release job. Add the following step after a successful release build:
@@ -35,9 +53,8 @@ existing release job. Add the following step after a successful release build:
   with:
     token: ${{ steps.catalog-token.outputs.token }}
     repo-name: ${{ github.event.repository.name }}
-    description: ${{ github.event.repository.description }}
     version: ${{ github.event.release.tag_name }}
-    repo-url: ${{ github.event.repository.html_url }}
+    release-url: ${{ github.event.release.html_url }}
 ```
 
 The GitHub App should be installed only on `Open-WP-Club/.github` with
@@ -45,8 +62,9 @@ The GitHub App should be installed only on `Open-WP-Club/.github` with
 `CATALOG_APP_CLIENT_ID` and its private key as the organization secret
 `CATALOG_APP_PRIVATE_KEY`, scoped to the plugin repositories. The installation
 token is short-lived and automatically revoked after the job. The catalog
-action uses the existing release runner, makes no catalog read API requests,
-and retries a rebased push if two releases update the catalog concurrently.
+action uses the existing release runner, updates `catalog.json` and the legacy
+compatibility row when appropriate, makes no catalog read API requests, and
+retries a rebased push if two releases update concurrently.
 
 ## Traffic tracking
 

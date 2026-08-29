@@ -3,12 +3,11 @@ import { existsSync } from 'node:fs';
 import { createCsv } from './csv.mjs';
 import { githubGraphqlRequest } from './github-api.mjs';
 import {
-  displayNameFromRepository,
-  normalizeVersion,
   orderPluginRows,
   pluginCatalogHeaders,
-  pluginRepositoryBlocklist,
 } from './plugin-catalog.mjs';
+import { buildProductCatalog } from './product-catalog.mjs';
+import { renderProfileReadme } from './profile-readme.mjs';
 
 const token = process.env.GITHUB_TOKEN;
 const organization = process.env.ORGANIZATION || process.env.GITHUB_REPOSITORY?.split('/')[0];
@@ -25,7 +24,13 @@ const query = `
           description
           url
           isArchived
-          latestRelease { tagName }
+          isFork
+          isPrivate
+          stargazerCount
+          forkCount
+          primaryLanguage { name }
+          repositoryTopics(first: 20) { nodes { topic { name } } }
+          latestRelease { tagName url }
         }
         pageInfo { hasNextPage endCursor }
       }
@@ -46,14 +51,16 @@ do {
   console.log(`Fetched ${connection.nodes.length} repositories with one GraphQL query`);
 } while (after);
 
-const rows = repositories
-  .filter((repository) => !repository.isArchived && !pluginRepositoryBlocklist.has(repository.name))
-  .map((repository) => ({
-    repo_name: repository.name,
-    display_name: displayNameFromRepository(repository.name),
-    description: repository.description || 'No description available',
-    version: normalizeVersion(repository.latestRelease?.tagName),
-    repo_url: repository.url,
+const overrides = JSON.parse(await readFile('data/product-overrides.json', 'utf8'));
+const catalog = buildProductCatalog(repositories, overrides);
+const rows = catalog.products
+  .filter(({ type }) => ['app', 'plugin', 'website'].includes(type))
+  .map((product) => ({
+    repo_name: product.repo_name,
+    display_name: product.display_name,
+    description: product.description,
+    version: product.version,
+    repo_url: product.repo_url,
   }));
 
 const existingCatalog = existsSync('plugins.csv') ? await readFile('plugins.csv', 'utf8') : '';
@@ -62,4 +69,13 @@ await writeFile(
   createCsv(pluginCatalogHeaders, orderPluginRows(rows, existingCatalog)),
   'utf8',
 );
-console.log(`Updated plugins.csv with ${rows.length} repositories`);
+await writeFile('catalog.json', `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
+
+const profileReadme = await readFile('profile/README.md', 'utf8');
+await writeFile('profile/README.md', renderProfileReadme(profileReadme, catalog), 'utf8');
+
+const pluginCount = catalog.products.filter(({ type }) => type === 'plugin').length;
+console.log(
+  `Updated catalog with ${catalog.products.length} products, ${pluginCount} plugins, `
+  + `and ${rows.length} compatibility rows`,
+);
