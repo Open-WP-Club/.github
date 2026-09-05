@@ -17,7 +17,7 @@ We build practical software for store owners, developers, and operations teams. 
 
 ## WordPress & WooCommerce Plugins
 
-We currently maintain **<!-- AUTO:PLUGIN_COUNT:START -->42<!-- AUTO:PLUGIN_COUNT:END --> open-source plugins**. Here are a few community favourites.
+We currently maintain **<!-- AUTO:PLUGIN_COUNT:START -->43<!-- AUTO:PLUGIN_COUNT:END --> open-source plugins**. Here are a few community favourites.
 
 <!-- AUTO:PLUGINS:START -->
 | Plugin | What it does |
