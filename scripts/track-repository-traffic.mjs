@@ -8,7 +8,6 @@ import {
   mapWithConcurrency,
 } from './github-api.mjs';
 
-const DOWNLOADS_FILE = 'downloads.csv';
 const STATS_FILE = 'stats.csv';
 const STATE_FILE = 'traffic-state.json';
 const token = process.env.GITHUB_TOKEN;
@@ -17,35 +16,6 @@ const organization = process.env.GITHUB_REPOSITORY?.split('/')[0];
 if (!token || !organization) {
   throw new Error('GITHUB_TOKEN and GITHUB_REPOSITORY are required');
 }
-
-const downloadsHeaders = [
-  { id: 'week_id', title: 'Week ID' },
-  { id: 'week_start', title: 'Week Start' },
-  { id: 'week_end', title: 'Week End' },
-  { id: 'recorded_date', title: 'Recorded Date' },
-  { id: 'repo_name', title: 'Repository Name' },
-  { id: 'repo_full_name', title: 'Repository Full Name' },
-  { id: 'entry_type', title: 'Entry Type' },
-  { id: 'clone_count', title: 'Clones (14d)' },
-  { id: 'unique_clones', title: 'Unique Clones' },
-  { id: 'view_count', title: 'Views (14d)' },
-  { id: 'unique_views', title: 'Unique Views' },
-  { id: 'top_referrer', title: 'Top Referrer' },
-  { id: 'top_referrer_count', title: 'Top Referrer Count' },
-  { id: 'repo_stars', title: 'Repository Stars' },
-  { id: 'repo_forks', title: 'Repository Forks' },
-  { id: 'repo_watchers', title: 'Repository Watchers' },
-  { id: 'repo_language', title: 'Primary Language' },
-  { id: 'repo_private', title: 'Is Private' },
-  { id: 'repo_size', title: 'Repository Size (KB)' },
-  { id: 'repo_open_issues', title: 'Open Issues' },
-  { id: 'repo_created_at', title: 'Repository Created' },
-  { id: 'repo_updated_at', title: 'Repository Updated' },
-  { id: 'repo_pushed_at', title: 'Last Push' },
-  { id: 'specific_date', title: 'Specific Date' },
-  { id: 'daily_clones', title: 'Daily Clones' },
-  { id: 'daily_views', title: 'Daily Views' },
-];
 
 const statsHeaders = [
   { id: 'total_clones', title: 'Clones (14d)' },
@@ -130,16 +100,7 @@ function addNewDailyTotals(state, dailyTotals, stateKey) {
 }
 
 const week = getCurrentWeekRange();
-const recordedDate = new Date().toISOString();
-const existingDownloads = await readTextIfPresent(DOWNLOADS_FILE);
-const weekExists = existingDownloads
-  .split(/\r?\n/)
-  .some((line) => line.startsWith(`${week.weekId},`));
-
 console.log(`Tracking ${organization} for ${week.weekId}`);
-if (weekExists) {
-  console.log(`${DOWNLOADS_FILE} already contains ${week.weekId}; detailed rows will not be duplicated`);
-}
 
 const repositories = await listOrganizationRepositories(organization, token);
 const trafficResults = await mapWithConcurrency(repositories, 6, getRepositoryData);
@@ -152,7 +113,7 @@ let totalForks = 0;
 let totalWatchers = 0;
 let repositoriesWithTraffic = 0;
 
-const downloadRows = trafficResults.map(({ repository, clones, views, referrers }) => {
+for (const { repository, clones, views } of trafficResults) {
   addDailyCounts(dailyClones, clones.clones);
   addDailyCounts(dailyViews, views.views);
 
@@ -164,43 +125,6 @@ const downloadRows = trafficResults.map(({ repository, clones, views, referrers 
   totalForks += repository.forks_count;
   totalWatchers += repository.watchers_count;
   repositoriesWithTraffic += Number(cloneCount > 0 || viewCount > 0);
-
-  return {
-    week_id: week.weekId,
-    week_start: week.start.toISOString(),
-    week_end: week.end.toISOString(),
-    recorded_date: recordedDate,
-    repo_name: repository.name,
-    repo_full_name: repository.full_name,
-    entry_type: 'REPO_SUMMARY',
-    clone_count: cloneCount,
-    unique_clones: clones.uniques || 0,
-    view_count: viewCount,
-    unique_views: views.uniques || 0,
-    top_referrer: referrers[0]?.referrer || '',
-    top_referrer_count: referrers[0]?.count || 0,
-    repo_stars: repository.stargazers_count,
-    repo_forks: repository.forks_count,
-    repo_watchers: repository.watchers_count,
-    repo_language: repository.language || 'None',
-    repo_private: repository.private,
-    repo_size: repository.size,
-    repo_open_issues: repository.open_issues_count,
-    repo_created_at: repository.created_at,
-    repo_updated_at: repository.updated_at,
-    repo_pushed_at: repository.pushed_at,
-    specific_date: '',
-    daily_clones: '',
-    daily_views: '',
-  };
-});
-
-if (!weekExists) {
-  await writeFile(
-    DOWNLOADS_FILE,
-    appendCsvRecords(existingDownloads, downloadsHeaders, downloadRows),
-    'utf8',
-  );
 }
 
 const state = existsSync(STATE_FILE)
@@ -219,7 +143,7 @@ state.totalStars = totalStars;
 state.totalForks = totalForks;
 state.totalWatchers = totalWatchers;
 state.totalRepos = repositories.length;
-state.updatedAt = recordedDate;
+state.updatedAt = new Date().toISOString();
 
 await writeFile(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`, 'utf8');
 
@@ -246,7 +170,6 @@ const outputs = {
   total_forks: totalForks,
   repos_with_traffic: repositoriesWithTraffic,
   total_repos: repositories.length,
-  skipped: weekExists,
 };
 
 if (process.env.GITHUB_OUTPUT) {

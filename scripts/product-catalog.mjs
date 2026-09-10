@@ -1,4 +1,27 @@
-import { displayNameFromRepository } from './plugin-catalog.mjs';
+const DISPLAY_NAME_CASING = new Map([
+  ['eu', 'EU'],
+  ['llms', 'LLMs'],
+  ['opengraph', 'OpenGraph'],
+  ['seo', 'SEO'],
+  ['sku', 'SKU'],
+  ['svg', 'SVG'],
+  ['vat', 'VAT'],
+  ['wc', 'WC'],
+  ['woo', 'Woo'],
+  ['woocommerce', 'WooCommerce'],
+  ['wordpress', 'WordPress'],
+  ['wp', 'WP'],
+  ['wpfleet', 'WPFleet'],
+]);
+
+export function displayNameFromRepository(repositoryName) {
+  return repositoryName
+    .split('-')
+    .filter(Boolean)
+    .map((word) => DISPLAY_NAME_CASING.get(word.toLowerCase())
+      || word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
 
 const APP_TOPICS = new Set(['app', 'desktop-app', 'electron-app', 'mobile-app', 'react-native']);
 const PLUGIN_TOPICS = new Set(['woocommerce-plugin', 'wordpress-plugin', 'wp-plugin']);

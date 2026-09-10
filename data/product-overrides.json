@@ -18,7 +18,7 @@
     "requirements": ["Windows, macOS, or Linux", "A WooCommerce store served over HTTPS", "WooCommerce REST API keys with Read/Write access"]
   },
   "mu-plugin": { "type": "tool" },
-  "openwpclub.com": { "type": "website" },
+  "openwpclub.com": { "type": "website", "display_name": "OpenWPClub.com" },
   "security-checker": { "type": "tool" },
   "wpfleet": { "type": "infrastructure" }
 }

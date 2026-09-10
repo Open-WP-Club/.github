@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  update-plugins-csv:
+  update-catalog:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -25,22 +25,22 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
-      - name: Update plugins.csv
+      - name: Update catalog.json
         env:
           GITHUB_TOKEN: ${{ github.token }}
           ORGANIZATION: Open-WP-Club
-        run: node scripts/update-plugins-csv.mjs
+        run: node scripts/update-catalog.mjs
 
       - name: Commit and push changes
         run: |
-          if git diff --quiet -- catalog.json plugins.csv profile/README.md; then
+          if git diff --quiet -- catalog.json profile/README.md; then
             echo "The product catalog and profile are already current"
             exit 0
           fi
 
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
-          git add catalog.json plugins.csv profile/README.md
+          git add catalog.json profile/README.md
           git commit -m "Update product catalog and profile"
           git pull --rebase
           git push

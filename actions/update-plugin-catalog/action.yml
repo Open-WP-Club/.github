@@ -1,5 +1,5 @@
 name: Update Open WP Club product catalog
-description: Update one product release in catalog.json and the legacy CSV feed
+description: Update one product release in catalog.json
 
 inputs:
   token:
@@ -28,13 +28,11 @@ runs:
         fetch-depth: 1
         sparse-checkout: |
           catalog.json
-          plugins.csv
         sparse-checkout-cone-mode: false
 
     - name: Update the released plugin row
       shell: bash
       env:
-        CATALOG_PATH: ${{ github.workspace }}/.open-wp-plugin-catalog/plugins.csv
         PRODUCT_CATALOG_PATH: ${{ github.workspace }}/.open-wp-plugin-catalog/catalog.json
         PRODUCT_REPO_NAME: ${{ inputs.repo-name }}
         PRODUCT_VERSION: ${{ inputs.version }}
@@ -47,14 +45,14 @@ runs:
       env:
         PRODUCT_REPO_NAME: ${{ inputs.repo-name }}
       run: |
-        if git diff --quiet -- catalog.json plugins.csv; then
+        if git diff --quiet -- catalog.json; then
           echo "The product catalog is already current for $PRODUCT_REPO_NAME"
           exit 0
         fi
 
         git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config user.name "github-actions[bot]"
-        git add catalog.json plugins.csv
+        git add catalog.json
         git commit -m "Update $PRODUCT_REPO_NAME in product catalog"
 
         for attempt in 1 2 3; do

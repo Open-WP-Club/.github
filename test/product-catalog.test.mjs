@@ -3,6 +3,7 @@ import test from 'node:test';
 import {
   buildProductCatalog,
   classifyRepository,
+  displayNameFromRepository,
   inferPlatforms,
   updateCatalogRelease,
 } from '../scripts/product-catalog.mjs';
@@ -26,6 +27,11 @@ function repository(name, options = {}) {
       : null,
   };
 }
+
+test('displayNameFromRepository applies preferred casing for known words', () => {
+  assert.equal(displayNameFromRepository('my-plugin'), 'My Plugin');
+  assert.equal(displayNameFromRepository('wc-pre-order'), 'WC Pre Order');
+});
 
 test('repository classification prefers overrides and recognized topics', () => {
   const app = repository('desktop-client', {

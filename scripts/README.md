@@ -6,22 +6,21 @@ so there are no runtime packages to install or audit.
 
 ## Product catalog
 
-`update-plugins-csv.mjs` uses a paginated GraphQL query to fetch up to 100
-repositories per API call, then writes the shared `catalog.json`, derives the
-legacy-compatible `plugins.csv`, and refreshes the generated sections in
-`profile/README.md`. The weekly traffic job runs this reconciliation only on the
-first Sunday of each month. It can also be run manually from the product catalog
-workflow.
+`update-catalog.mjs` uses a paginated GraphQL query to fetch up to 100
+repositories per API call, then writes the shared `catalog.json` and refreshes
+the generated sections in `profile/README.md`. The weekly traffic job runs this
+reconciliation only on the first Sunday of each month. It can also be run
+manually from the product catalog workflow.
 
 ```sh
 GITHUB_TOKEN="$(gh auth token)" ORGANIZATION=Open-WP-Club \
-  node scripts/update-plugins-csv.mjs
+  node scripts/update-catalog.mjs
 ```
 
-`catalog.json` is the source of truth for the organization profile, website
-catalog, and other consumers. `plugins.csv` remains as a legacy compatibility
-feed for current consumers and includes plugins, apps, and the website; product
-types should be read from `catalog.json` in new integrations.
+`catalog.json` is the single source of truth for the organization profile,
+website, `plugin-hub`, and every other consumer. There is no CSV feed anymore
+— read `catalog.json` directly (raw URL:
+`https://raw.githubusercontent.com/Open-WP-Club/.github/main/catalog.json`).
 
 Classification is automatic. Repository topics such as `desktop-app`,
 `mobile-app`, `electron-app`, `react-native`, `wordpress-plugin`,
@@ -62,14 +61,14 @@ The GitHub App should be installed only on `Open-WP-Club/.github` with
 `CATALOG_APP_CLIENT_ID` and its private key as the organization secret
 `CATALOG_APP_PRIVATE_KEY`, scoped to the plugin repositories. The installation
 token is short-lived and automatically revoked after the job. The catalog
-action uses the existing release runner, updates `catalog.json` and the legacy
-compatibility row when appropriate, makes no catalog read API requests, and
-retries a rebased push if two releases update concurrently.
+action uses the existing release runner, updates the product's `catalog.json`
+row, makes no catalog read API requests, and retries a rebased push if two
+releases update concurrently.
 
 ## Traffic tracking
 
-`track-repository-traffic.mjs` updates `downloads.csv`, `stats.csv`, and
-`traffic-state.json`. GitHub only exposes repository traffic for the trailing
+`track-repository-traffic.mjs` updates `stats.csv` and `traffic-state.json`.
+GitHub only exposes repository traffic for the trailing
 14 days, so the state file records the last counted clone and view dates to
 avoid double-counting overlapping weekly windows.
 
