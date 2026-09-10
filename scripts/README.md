@@ -9,8 +9,9 @@ so there are no runtime packages to install or audit.
 `update-catalog.mjs` uses a paginated GraphQL query to fetch up to 100
 repositories per API call, then writes the shared `catalog.json` and refreshes
 the generated sections in `profile/README.md`. The weekly traffic job runs this
-reconciliation only on the first Sunday of each month. It can also be run
-manually from the product catalog workflow.
+reconciliation every week, so a new release tag in any repository is picked up
+within a week at most without any per-repository setup. It can also be run
+manually from the product catalog workflow for an immediate refresh.
 
 ```sh
 GITHUB_TOKEN="$(gh auth token)" ORGANIZATION=Open-WP-Club \

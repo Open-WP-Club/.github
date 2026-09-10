@@ -35,18 +35,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
         run: node scripts/track-repository-traffic.mjs
 
-      - name: Reconcile plugin catalog on the first Sunday of the month
+      - name: Reconcile plugin catalog
         env:
           GITHUB_TOKEN: ${{ secrets.WORKFLOW_TOKEN || github.token }}
           ORGANIZATION: Open-WP-Club
-          EVENT_NAME: ${{ github.event_name }}
-        run: |
-          current_day="$(date -u +%d)"
-          if [[ "$EVENT_NAME" == "workflow_dispatch" || "$current_day" -le 7 ]]; then
-            node scripts/update-catalog.mjs
-          else
-            echo "Skipping monthly plugin catalog reconciliation"
-          fi
+        run: node scripts/update-catalog.mjs
 
       - name: Commit and push changes
         run: |
