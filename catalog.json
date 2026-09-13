@@ -195,7 +195,7 @@
         "wordpress-plugin"
       ],
       "stars": 5,
-      "forks": 0,
+      "forks": 1,
       "featured": true
     },
     {
@@ -364,8 +364,8 @@
       "type": "plugin",
       "description": "Automatically synchronize products, stock levels, and inventory from your main WooCommerce store to multiple remote WooCommerce stores. Built from the ground up as a standalone solution with enterprise-grade features.",
       "repo_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce",
-      "version": "4.1.3",
-      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/4.1.3",
+      "version": "4.2.0",
+      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/4.2.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
@@ -482,8 +482,8 @@
       "type": "plugin",
       "description": "Plugin Hub is Open WP Club official way of installing/updating plugins from their official repos.",
       "repo_url": "https://github.com/Open-WP-Club/plugin-hub",
-      "version": "1.4.2",
-      "release_url": "https://github.com/Open-WP-Club/plugin-hub/releases/tag/1.4.2",
+      "version": "1.4.3",
+      "release_url": "https://github.com/Open-WP-Club/plugin-hub/releases/tag/1.4.3",
       "platforms": [],
       "language": "PHP",
       "topics": [],
