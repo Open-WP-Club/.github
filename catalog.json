@@ -308,8 +308,8 @@
       "type": "plugin",
       "description": "A WooCommerce extension for zone-aware store pickup locations with individual prices. It is built specifically for the modern Cart and Checkout Blocks.",
       "repo_url": "https://github.com/Open-WP-Club/local-pickup-woocommerce",
-      "version": "1.0.0",
-      "release_url": "https://github.com/Open-WP-Club/local-pickup-woocommerce/releases/tag/1.0.0",
+      "version": "1.1.2",
+      "release_url": "https://github.com/Open-WP-Club/local-pickup-woocommerce/releases/tag/1.1.2",
       "platforms": [],
       "language": "PHP",
       "topics": [
@@ -364,8 +364,8 @@
       "type": "plugin",
       "description": "Automatically synchronize products, stock levels, and inventory from your main WooCommerce store to multiple remote WooCommerce stores. Built from the ground up as a standalone solution with enterprise-grade features.",
       "repo_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce",
-      "version": "4.2.0",
-      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/4.2.0",
+      "version": "4.2.2",
+      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/4.2.2",
       "platforms": [],
       "language": "PHP",
       "topics": [
