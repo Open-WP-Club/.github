@@ -184,8 +184,8 @@
       "type": "plugin",
       "description": "A WordPress plugin that allows you to display your Google Scholar profile information on your website using a simple shortcode.",
       "repo_url": "https://github.com/Open-WP-Club/google-scholar-wp",
-      "version": "1.6.0",
-      "release_url": "https://github.com/Open-WP-Club/google-scholar-wp/releases/tag/1.6.0",
+      "version": "1.7.0",
+      "release_url": "https://github.com/Open-WP-Club/google-scholar-wp/releases/tag/1.7.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
@@ -364,8 +364,8 @@
       "type": "plugin",
       "description": "Automatically synchronize products, stock levels, and inventory from your main WooCommerce store to multiple remote WooCommerce stores. Built from the ground up as a standalone solution with enterprise-grade features.",
       "repo_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce",
-      "version": "4.2.2",
-      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/4.2.2",
+      "version": "5.0.0",
+      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/5.0.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
