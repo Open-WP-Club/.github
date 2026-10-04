@@ -447,8 +447,8 @@
       "type": "plugin",
       "description": "A modern WooCommerce plugin that shows a colour-coded payment-method badge when an administrator opens an order. It does not create or process payments—it works with your existing payment gateways.",
       "repo_url": "https://github.com/Open-WP-Club/payment-method-highlighter-for-wooCommerce",
-      "version": "1.2.1",
-      "release_url": "https://github.com/Open-WP-Club/payment-method-highlighter-for-wooCommerce/releases/tag/1.2.1",
+      "version": "1.4.0",
+      "release_url": "https://github.com/Open-WP-Club/payment-method-highlighter-for-wooCommerce/releases/tag/1.4.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
