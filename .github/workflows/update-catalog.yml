@@ -1,6 +1,8 @@
 name: Update product catalog and profile
 
 on:
+  schedule:
+    - cron: '31 5 * * *'
   workflow_dispatch:
 
 permissions:

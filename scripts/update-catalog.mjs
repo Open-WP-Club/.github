@@ -1,6 +1,7 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { githubGraphqlRequest } from './github-api.mjs';
 import { buildProductCatalog } from './product-catalog.mjs';
+import { refreshSponsorship } from './sponsorship-feed.mjs';
 import { renderProfileReadme } from './profile-readme.mjs';
 
 const token = process.env.GITHUB_TOKEN;
@@ -47,6 +48,10 @@ do {
 
 const overrides = JSON.parse(await readFile('data/product-overrides.json', 'utf8'));
 const catalog = buildProductCatalog(repositories, overrides);
+
+let previousSponsorship;
+try { previousSponsorship = JSON.parse(await readFile('catalog.json', 'utf8')).sponsorship; } catch { /* First catalog generation. */ }
+catalog.sponsorship = await refreshSponsorship(previousSponsorship);
 
 await writeFile('catalog.json', `${JSON.stringify(catalog, null, 2)}\n`, 'utf8');
 
