@@ -11,6 +11,7 @@ export function validateSponsorshipFeed(data) {
       ids.add(entry.id);
       if (typeof entry.name !== 'string' || !entry.name.trim() || entry.name.length > 240 || /[<>\r\n]/.test(entry.name)) throw new Error('Invalid sponsor name');
       if (typeof entry.description !== 'string' || entry.description.length > 240 || /[<>\r\n]/.test(entry.description)) throw new Error('Invalid sponsor description');
+      if (!['supporter', 'partner', 'champion'].includes(entry.tier)) throw new Error('Invalid sponsor tier');
       const url = new URL(entry.url);
       if (url.protocol !== 'https:' || url.username || url.password) throw new Error('Invalid sponsor URL');
       if (typeof entry.active !== 'boolean' || !Number.isFinite(entry.priority)) throw new Error('Invalid sponsor status');
@@ -21,7 +22,7 @@ export function validateSponsorshipFeed(data) {
       if (typeof entry.logoData !== 'string' || entry.logoData.length > 65536 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(entry.logoData)) throw new Error('Invalid embedded logo');
       const png = Buffer.from(entry.logoData.slice(22), 'base64');
       if (png.subarray(0, 8).toString('hex') !== '89504e470d0a1a0a') throw new Error('Not a PNG logo');
-      result[group].push({ id: entry.id, name: entry.name, url: url.href, description: entry.description, logoData: entry.logoData, active: entry.active, priority: entry.priority, startsAt: entry.startsAt, endsAt: entry.endsAt });
+      result[group].push({ tier: entry.tier, id: entry.id, name: entry.name, url: url.href, description: entry.description, logoData: entry.logoData, active: entry.active, priority: entry.priority, startsAt: entry.startsAt, endsAt: entry.endsAt });
     }
   }
   return result;
