@@ -162,8 +162,8 @@
       ],
       "language": "TypeScript",
       "topics": [],
-      "stars": 0,
-      "forks": 0,
+      "stars": 1,
+      "forks": 1,
       "featured": true,
       "icon": "https://raw.githubusercontent.com/Open-WP-Club/FulFill-for-WooCommerce/main/assets/logo.svg",
       "features": [
@@ -319,9 +319,9 @@
         "woocommerce-plugin",
         "wordpress"
       ],
-      "stars": 0,
-      "forks": 0,
-      "featured": false
+      "stars": 1,
+      "forks": 1,
+      "featured": true
     },
     {
       "repo_name": "logo-link-wp",
@@ -364,8 +364,8 @@
       "type": "plugin",
       "description": "Automatically synchronize products, stock levels, and inventory from your main WooCommerce store to multiple remote WooCommerce stores. Built from the ground up as a standalone solution with enterprise-grade features.",
       "repo_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce",
-      "version": "5.0.0",
-      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/5.0.0",
+      "version": "5.1.0",
+      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/5.1.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
@@ -691,7 +691,7 @@
       ],
       "stars": 1,
       "forks": 0,
-      "featured": true
+      "featured": false
     },
     {
       "repo_name": "StoreOS",

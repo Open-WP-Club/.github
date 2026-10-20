@@ -24,10 +24,10 @@ We currently maintain **<!-- AUTO:PLUGIN_COUNT:START -->43<!-- AUTO:PLUGIN_COUNT
 |---|---|
 | [Google Scholar WP](https://github.com/Open-WP-Club/google-scholar-wp) | A WordPress plugin that allows you to display your Google Scholar profile information on your website using a simple shortcode. |
 | [LLMs Txt For WP](https://github.com/Open-WP-Club/llms-txt-for-wp) | Generate llms.txt and Markdown versions of your WordPress content for AI/LLM consumption. |
+| [Local Pickup WooCommerce](https://github.com/Open-WP-Club/local-pickup-woocommerce) | A WooCommerce extension for zone-aware store pickup locations with individual prices. It is built specifically for the modern Cart and Checkout Blocks. |
 | [Logo Link WP](https://github.com/Open-WP-Club/logo-link-wp) | WordPress plugin that enhances your site logo's functionality by adding customizable click behaviors. Left-click directs to your homepage, while right-click leads to your specified assets page. |
 | [Rank Math Automation WP](https://github.com/Open-WP-Club/rank-math-automation-wp) | Optimize WooCommerce products for SEO using RankMath |
 | [SKU Auto WooCommerce](https://github.com/Open-WP-Club/sku-auto-woocommerce) | A WordPress plugin that automatically generates SKUs for WooCommerce products that don't have them. Features bulk generation and customizable SKU patterns. |
-| [Static Export WP](https://github.com/Open-WP-Club/static-export-wp) | Export your WordPress site as static HTML files. Crawls every page like a browser and saves a complete static copy with all referenced assets. |
 <!-- AUTO:PLUGINS:END -->
 
 Use [Plugin Hub](https://github.com/Open-WP-Club/plugin-hub) to install and update Open WP Club plugins directly from WordPress, or browse the [complete repository catalog](https://github.com/orgs/Open-WP-Club/repositories).
