@@ -364,8 +364,8 @@
       "type": "plugin",
       "description": "Automatically synchronize products, stock levels, and inventory from your main WooCommerce store to multiple remote WooCommerce stores. Built from the ground up as a standalone solution with enterprise-grade features.",
       "repo_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce",
-      "version": "5.3.0",
-      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/5.3.0",
+      "version": "5.4.0",
+      "release_url": "https://github.com/Open-WP-Club/multi-store-sync-for-woocommerce/releases/tag/5.4.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
