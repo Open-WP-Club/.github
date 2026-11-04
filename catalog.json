@@ -341,7 +341,7 @@
       ],
       "stars": 1,
       "forks": 0,
-      "featured": true
+      "featured": false
     },
     {
       "repo_name": "mu-plugin",
@@ -378,7 +378,7 @@
         "wordpress-plugin"
       ],
       "stars": 0,
-      "forks": 0,
+      "forks": 1,
       "featured": false
     },
     {
@@ -689,9 +689,9 @@
         "exporting-pages",
         "wordpress"
       ],
-      "stars": 1,
+      "stars": 2,
       "forks": 0,
-      "featured": false
+      "featured": true
     },
     {
       "repo_name": "StoreOS",
