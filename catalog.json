@@ -39,6 +39,21 @@
       "featured": false
     },
     {
+      "repo_name": "adminova",
+      "display_name": "Adminova",
+      "type": "plugin",
+      "description": "No description available",
+      "repo_url": "https://github.com/Open-WP-Club/adminova",
+      "version": "N/A",
+      "release_url": "",
+      "platforms": [],
+      "language": "PHP",
+      "topics": [],
+      "stars": 0,
+      "forks": 0,
+      "featured": false
+    },
+    {
       "repo_name": "agentready-wp",
       "display_name": "Agentready WP",
       "type": "plugin",
