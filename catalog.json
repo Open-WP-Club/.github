@@ -563,6 +563,28 @@
       "featured": false
     },
     {
+      "repo_name": "PurgeKit",
+      "display_name": "PurgeKit",
+      "type": "plugin",
+      "description": "One control centre for every cache layer on a WordPress site. PurgeKit notices when your site changes, purges your cache plugin, host cache, Varnish and CDN in the right order (inside to outside), then warms the cache again.",
+      "repo_url": "https://github.com/Open-WP-Club/PurgeKit",
+      "version": "0.2.1",
+      "release_url": "https://github.com/Open-WP-Club/PurgeKit/releases/tag/0.2.1",
+      "platforms": [],
+      "language": "PHP",
+      "topics": [
+        "cache-cleaner",
+        "cache-control",
+        "cache-invalidation",
+        "cachemanager",
+        "wordpress",
+        "wordpress-plugin"
+      ],
+      "stars": 0,
+      "forks": 0,
+      "featured": false
+    },
+    {
       "repo_name": "rank-math-automation-wp",
       "display_name": "Rank Math Automation WP",
       "type": "plugin",
