@@ -568,8 +568,8 @@
       "type": "plugin",
       "description": "One control centre for every cache layer on a WordPress site. PurgeKit notices when your site changes, purges your cache plugin, host cache, Varnish and CDN in the right order (inside to outside), then warms the cache again.",
       "repo_url": "https://github.com/Open-WP-Club/PurgeKit",
-      "version": "0.2.1",
-      "release_url": "https://github.com/Open-WP-Club/PurgeKit/releases/tag/0.2.1",
+      "version": "0.4.0",
+      "release_url": "https://github.com/Open-WP-Club/PurgeKit/releases/tag/0.4.0",
       "platforms": [],
       "language": "PHP",
       "topics": [
